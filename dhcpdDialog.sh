@@ -97,12 +97,14 @@ while [[ $mainMenuResult != "Exit" ]]; do
         exec 3>&1
         networkResult=$(dialog --inputbox "Which network do you want to add? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
         exec 3>&-
-        subnet=$(echo $networkResult | cut -d" " -f1) #Sets the current subnet to what the user put in
-        netmask=$(echo $networkResult | cut -d" " -f2) #Sets the current netmask to what the user put in
-        currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
-        rm $currentScope #Deletes the scope file to prevent the user from adding on to an existing scope file
-        echo -e "subnet $subnet netmask $netmask{\n}" >> $currentScope #Places the subnet and netmask info into the file
-        dialogAddMenu
+        if ! [[ -z $networkResult ]]; then
+            subnet=$(echo $networkResult | cut -d" " -f1) #Sets the current subnet to what the user put in
+            netmask=$(echo $networkResult | cut -d" " -f2) #Sets the current netmask to what the user put in
+            currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
+            rm $currentScope #Deletes the scope file to prevent the user from adding on to an existing scope file
+            echo -e "subnet $subnet netmask $netmask{\n}" >> $currentScope #Places the subnet and netmask info into the file
+            dialogAddMenu
+        fi
         ;;
     3)
         ;;
