@@ -1,6 +1,8 @@
 # dhcpdDialog
 Bash script for managing dhcpd with (GNU) Dialog
 
+This isc dhcpd server tool is work in progress.
+
 PREREQUISITES:
 
 Dialog (Tested with v1:1.3_20201126-1 on Arch)
