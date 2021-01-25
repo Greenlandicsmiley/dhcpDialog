@@ -1,20 +1,18 @@
 # dhcpdDialog
 Bash script for managing dhcpd with (GNU) Dialog
 
+THIS IS NOT FOR COMPLETE dhcpd configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
+
 This isc dhcpd server tool is work in progress.
 
-PREREQUISITES:
+DEPENDENCIES (That I know so far):
 
 Dialog (Tested with v1:1.3_20201126-1 on Arch)
 
 Bash (Tested with v5.1.004-1 on Arch)
 
-A folder for actual scope options (Currently you have to specify which folder it is in the script)
+Manual intervention:
 
-A folder for IP exclusions (You have to specify which folder it is in the script. MUST BE SEPARATE FROM scope options)
+By default: the script uses "dhcpdScopes" for scope options and "exclusions" as the folder for excluded IPs. If using defaults, then place the script in it's own folder (the user chooses where) and make the two folders where the script has been put in. The conf file is generated in the folder the script has been put in. You can change the name of the conf file in the script. If you want to change the path of the scopes and excluded IP folders, then you can change it in the script. They're set at the start of the script.
 
-A conf file to group together the scope options that the user running the script has access to
-
-Add "include "/path/to/file";" at the end of the dhcpd configuration file
-
-THIS IS NOT FOR COMPLETE dhcpd configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
+Add "include "/path/to/confFile";" at the end of the dhcpd configuration file (or in the middle)
