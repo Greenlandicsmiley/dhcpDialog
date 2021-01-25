@@ -5,3 +5,4 @@ PREREQUISITES:
 Dialog (Tested with v1:1.3_20201126-1 on Arch)
 Bash (Tested with v5.1.004-1 on Arch)
 A folder for actual scope options ()
+To be continued when I wake up... (25-01/21 02:17am gmt-3)
