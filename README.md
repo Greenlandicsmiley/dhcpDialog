@@ -1,5 +1,5 @@
 # dhcpdDialog
-Bash script for managing dhcpd with (GNU) Dialog
+Bash script for managing dhcpd scopes with (GNU) Dialog
 
 THIS IS NOT FOR COMPLETE dhcpd configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
 
