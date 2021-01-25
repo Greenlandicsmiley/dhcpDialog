@@ -15,4 +15,6 @@ A folder for IP exclusions (You have to specify which folder it is in the script
 
 A conf file to group together the scope options that the user running the script has access to
 
-The 
+Add "include "/path/to/file";" at the end of the dhcpd configuration file
+
+THIS IS NOT FOR COMPLETE dhcpd configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
