@@ -1,12 +1,15 @@
 #!/bin/bash
 
-scopeFolder="dhcpdRanges"
-
-exclusionsFolder="exclusionsFolder"
-exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
-currentScope="$scopeFolder/s$subnet.n$netmask"
+scopeFolder="dhcpdScopes"
+confFile="dhcpdDialog.conf"
+exclusionsFolder="exclusions"
+LICENSE=$(cat LICENSE)
 
 #Functions
+debug() { #For checking if script passes a certain line/function
+    dialog --msgbox "$1" 0 0 
+}
+
 ipAddition () {
     rangeStart="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(expr $(echo $rangeStart | cut -d"." -f4) + 1)" #Adds 1 to last octet of IP, if it results in 256, then it is passed down to 3rd octet. 
     if [[ $(echo $rangeStart | cut -d"." -f4 ) -ge 256 ]]; then
@@ -41,42 +44,39 @@ ipSubtraction () {
 
 dialogInputbox () {
     exec 3>&1
-    optionResult=$(dialog --inputbox "$(echo $option | cut -d':' -f1)" 0 0 2>&1 1>&3) #An input box to get user input for the chosen option
-    exitcode=$?
+    optionResult=$(dialog --inputbox "$optionName" 0 0 2>&1 1>&3) #An input box to get user input for the chosen option
     exec 3>&-
     if ! [[ -z $optionResult ]]; then
-        case $option in
-        *single) #Checks if the option is supposed to be single value
-            lineString="option $(echo $option | cut -d":" -f2) $optionResult" #Variable to keep the code short and more understandable
-            if $(grep -q "$(echo $option | cut -d":" -f2) " $currentScope); then #Checks if the option already exists in the scope file
-                optionLine=$(grep -n "$(echo $option | cut -d":" -f2) " $currentScope | cut -d":" -f1) #Gets the line number for the option
-                sed -i "${optionLine}s|.*|${lineString};|" $currentScope #Replaces the entire line with the desired value
+        case $optionMode in
+        single) #Checks if the option is supposed to be single value
+            if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists in the scope file
+                optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number for the option
+                sed -i "${optionLine}s|.*|    option ${optionCode} ${optionResult};|" $currentScope #Replaces the entire line with the desired value
             else
                 curvedLineNumber=$(grep -n "}" $currentScope | cut -d":" -f1) #Gets the line number of }
-                sed -i "${curvedLineNumber}s|.*|${lineString};\n}|" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
+                sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
             fi
             ;;
-        *multi) #Checks if the option is supposed to have multiple values
-            lineString="option $(echo $option | cut -d':' -f2) $optionResult" #Variable to keep the code short and more understandable 
-            if $(grep -q "$(echo $option | cut -d":" -f2) " $currentScope); then #Checks if the option already exists
-                optionLine=$(grep -n "$(echo $option | cut -d":" -f2) " $currentScope | cut -d":" -f1) #Gets the line number of the desired option to be added on
+        multi) #Checks if the option is supposed to have multiple values 
+            if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists
+                optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number of the desired option to be added on
                 sed -i "${optionLine}s|;|, ${optionResult};|" $currentScope #Replaces the existing semicolon with the desired value
             else
                 curvedLineNumber=$(grep -n "}" $currentScope | cut -d":" -f1) #Gets the line number of }
-                sed -i "${curvedLineNumber}s|.*|${lineString};\n}|" $currentScope #Replaces the entire line with the desired option to be added and places a } at the end of the file
+                sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and places a } at the end of the file
             fi
             ;;
-        *quotes) #Checks if the option is supposed to be in quotes
-            lineString="option $(echo $option | cut -d":" -f2) \"$optionResult\"" #Variable to keep the code short and more understandable
-            if $(grep -q "$(echo $option | cut -d":" -f2) " $currentScope); then #Checks if the option already exists
-                optionLine=$(grep -n "$(echo $option | cut -d":" -f2) " $currentScope | cut -d":" -f1) #Gets the line number of the option
-                sed -i "${optionLine}s|.*|${lineString};|" $currentScope #Replaces the entire line with the desired value: Reason for replacing the entire line: Most options where quotes are needed are usually single value. Will add support for multiple values if requested. You can also add it youself ;) it's open source anyway
+        quotes) #Checks if the option is supposed to be in quotes
+            if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists
+                optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number of the option
+                sed -i "${optionLine}s|.*|    option ${optionCode} \"${optionResult}\";|" $currentScope #Replaces the entire line with the desired value: Reason for replacing the entire line: Most options where quotes are needed are usually single value. Will add support for multiple values if requested. You can also add it youself ;) it's open source anyway
             else
                 curvedLineNumber=$(grep -n "}" $currentScope | cut -d":" -f1) #Gets the line number of }
-                sed -i "${curvedLineNumber}s|.*|${lineString};\n}|" $currentScope #Replaces the entire line with the desired option to be added and places a } at the end of the file
+                sed -i "${curvedLineNumber}s|.*|    option ${optionCode} \"${optionResult}\";\n}|" $currentScope #Replaces the entire line with the desired option to be added and places a } at the end of the file
             fi
             ;;
         esac
+        cat $scopeFolder/s*.n* > $confFile
     fi
 }
 
@@ -87,8 +87,8 @@ while [[ $mainMenuResult != "Exit" ]]; do
     1 "Edit scope(s) (CURRENTLY NOT AVAILABLE)" \
     2 "Add scope(s)" \
     3 "Delete scope(s) (CURRENTLY NOT AVAILABLE)" \
+    4 "About" \
     "Exit" "" 2>&1 1>&3)
-    mainMenuExitCode=$?
     exec 3>&-
     case $mainMenuResult in
     1)
@@ -97,7 +97,7 @@ while [[ $mainMenuResult != "Exit" ]]; do
         exec 3>&1
         networkResult=$(dialog --inputbox "Which network do you want to add? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
         exec 3>&-
-        if ! [[ -z $networkResult ]]; then
+        if ! [[ -z $networkResult ]];then #Checks if the input is empty
             subnet=$(echo $networkResult | cut -d" " -f1) #Sets the current subnet to what the user put in
             netmask=$(echo $networkResult | cut -d" " -f2) #Sets the current netmask to what the user put in
             currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
@@ -107,13 +107,20 @@ while [[ $mainMenuResult != "Exit" ]]; do
         fi
         ;;
     3)
+        exec 3>&1
+        deleteScope=$(dialog --inputbox "Which scope do you want to delete? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
+        exec 3>&-
+        ;;
+    4)
+        dialog --msgbox "This script is for use with managing dhcp scopes.\nCopyright (C) 2021  Thomas Petersen/Greenlandicsmiley\n\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <https://www.gnu.org/licenses/>.\n\nContact the author via email: greenlandicsmiley@gmail.com\nor via reddit: www.reddit.com/user/Greenlandicsmiley" 0 0 #Copyright notice and
         ;;
     esac
 done
 }
 
 dialogAddMenu () {
-while [[ $menuResult != "Back" ]]; do
+menuResult="" #To avoid soft lock of next line :)
+while ! [[ $menuResult == "Back" ]]; do
     exec 3>&1
     menuResult=$(dialog --menu "Options" 0 0 0 \
     1 "Subnet mask" \
@@ -126,52 +133,52 @@ while [[ $menuResult != "Back" ]]; do
     42 "NTP server(s)" \
     66 "TFTP server(s)" \
     67 "Boot file name" \
-    9999 "Exclude an IP" \
+    "Exclude an IP" "" \
     "Set scope range" "" \
     "Back" "" 2>&1 1>&3)
     exec 3>&-
     case $menuResult in
     1)
-        option="Subnet mask:subnet-mask:single" #One variable with multiple values to reduce variable count. Keeps the code short and readable
+        optionName="Subnet mask"; optionCode="subnet-mask"; optionMode"single"
         dialogInputbox
         ;;
     3)
-        option="Router(s):routers:single"
+        optionName="Router(s)"; optionCode="routers"; optionMode"single"
         dialogInputbox
         ;;
     4)
-        option="Time server(s):time-servers:multi"
+        optionName="Time server(s)"; optionCode="time-servers"; optionMode"multi"
         dialogInputbox
         ;;
     6)
-        option="DNS servers:domain-name-servers:multi"
+        optionName="DNS servers"; optionCode="domain-name-servers"; optionMode"multi"
         dialogInputbox
         ;;
     15)
-        option="Domain name:domain-name:quotes"
+        optionName="Domain name"; optionCode="domain-name"; optionMode"quotes"
         dialogInputbox
         ;;
     28)
-        option="Broadcast address:broadcast-address:single"
+        optionName="Broadcast address"; optionCode="broadcast-address"; optionMode"single"
         dialogInputbox
         ;;
     33)
-        option="Static route(s):static-routes:multi"
+        optionName="Static route(s)"; optionCode="static-routes"; optionMode"multi"
         dialogInputbox
         ;;
     42)
-        option="NTP server(s):ntp-servers:multi"
+        optionName="NTP server(s)"; optionCode="ntp-servers"; optionMode"multi"
         dialogInputbox
         ;;
     66)
-        option="TFTP server:tftp-server-name:quotes"
+        optionName="TFTP server"; optionCode="tftp-server-name"; optionMode"quotes"
         dialogInputbox
         ;;
     67)
-        option="Boot file name:bootfile-name:quotes"
+        optionName="Boot file name"; optionCode="bootfile-name"; optionMode"quotes"
         dialogInputbox
         ;;
-    9999)
+    "Exclude an IP")
         if $(grep -q "X:" $exclusionsFile) && $(grep -q "Z:" $exclusionsFile); then #Checks if a scope range has been set
             exec 3>&1
             excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
