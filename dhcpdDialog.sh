@@ -3,7 +3,7 @@
 scopeFolder="dhcpdScopes"
 confFile="dhcpdDialog.conf"
 exclusionsFolder="exclusions"
-LICENSE=$(cat LICENSE)
+LICENSE="LICENSE"
 
 #Functions
 debug() { #For checking if script passes a certain line/function
@@ -88,6 +88,7 @@ while [[ $mainMenuResult != "Exit" ]]; do
     2 "Add scope(s)" \
     3 "Delete scope(s)" \
     4 "About" \
+    5 "View the entire license" \
     "Exit" "" 2>&1 1>&3)
     exec 3>&-
     case $mainMenuResult in
@@ -129,6 +130,9 @@ while [[ $mainMenuResult != "Exit" ]]; do
         ;;
     4)
         dialog --msgbox "This script is for use with managing dhcp scopes.\nCopyright (C) 2021  Thomas Petersen/Greenlandicsmiley\n\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <https://www.gnu.org/licenses/>.\n\nContact the author via email: greenlandicsmiley@gmail.com\nor via reddit: www.reddit.com/user/Greenlandicsmiley" 0 0 #Copyright notice and
+        ;;
+    5)
+        dialog --textbox $LICENSE 0 0
         ;;
     esac
 done
