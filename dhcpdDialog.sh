@@ -48,7 +48,7 @@ dialogInputbox () {
     exec 3>&-
     if ! [[ -z $optionResult ]]; then
         case $optionMode in
-        single) #Checks if the option is supposed to be single value
+        "single") #Checks if the option is supposed to be single value
             if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists in the scope file
                 optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number for the option
                 sed -i "${optionLine}s|.*|    option ${optionCode} ${optionResult};|" $currentScope #Replaces the entire line with the desired value
@@ -57,7 +57,7 @@ dialogInputbox () {
                 sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
             fi
             ;;
-        multi) #Checks if the option is supposed to have multiple values 
+        "multi") #Checks if the option is supposed to have multiple values
             if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists
                 optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number of the desired option to be added on
                 sed -i "${optionLine}s|;|, ${optionResult};|" $currentScope #Replaces the existing semicolon with the desired value
@@ -66,7 +66,7 @@ dialogInputbox () {
                 sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and places a } at the end of the file
             fi
             ;;
-        quotes) #Checks if the option is supposed to be in quotes
+        "quotes") #Checks if the option is supposed to be in quotes
             if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists
                 optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number of the option
                 sed -i "${optionLine}s|.*|    option ${optionCode} \"${optionResult}\";|" $currentScope #Replaces the entire line with the desired value: Reason for replacing the entire line: Most options where quotes are needed are usually single value. Will add support for multiple values if requested. You can also add it youself ;) it's open source anyway
@@ -159,43 +159,63 @@ while ! [[ $menuResult == "Back" ]]; do
     exec 3>&-
     case $menuResult in
     1)
-        optionName="Subnet mask"; optionCode="subnet-mask"; optionMode"single"
+        optionName="Subnet mask"
+        optionCode="subnet-mask"
+        optionMode="single"
         dialogInputbox
         ;;
     3)
-        optionName="Router(s)"; optionCode="routers"; optionMode"single"
+        optionName="Router(s)"
+        optionCode="routers"
+        optionMode="single"
         dialogInputbox
         ;;
     4)
-        optionName="Time server(s)"; optionCode="time-servers"; optionMode"multi"
+        optionName="Time server(s)"
+        optionCode="time-servers"
+        optionMode="multi"
         dialogInputbox
         ;;
     6)
-        optionName="DNS servers"; optionCode="domain-name-servers"; optionMode"multi"
+        optionName="DNS servers"
+        optionCode="domain-name-servers"
+        optionMode="multi"
         dialogInputbox
         ;;
     15)
-        optionName="Domain name"; optionCode="domain-name"; optionMode"quotes"
+        optionName="Domain name"
+        optionCode="domain-name"
+        optionMode="quotes"
         dialogInputbox
         ;;
     28)
-        optionName="Broadcast address"; optionCode="broadcast-address"; optionMode"single"
+        optionName="Broadcast address"
+        optionCode="broadcast-address"
+        optionMode="single"
         dialogInputbox
         ;;
     33)
-        optionName="Static route(s)"; optionCode="static-routes"; optionMode"multi"
+        optionName="Static route(s)"
+        optionCode="static-routes"
+        optionMode="multi"
         dialogInputbox
         ;;
     42)
-        optionName="NTP server(s)"; optionCode="ntp-servers"; optionMode"multi"
+        optionName="NTP server(s)"
+        optionCode="ntp-servers"
+        optionMode="multi"
         dialogInputbox
         ;;
     66)
-        optionName="TFTP server"; optionCode="tftp-server-name"; optionMode"quotes"
+        optionName="TFTP server"
+        optionCode="tftp-server-name"
+        optionMode="quotes"
         dialogInputbox
         ;;
     67)
-        optionName="Boot file name"; optionCode="bootfile-name"; optionMode"quotes"
+        optionName="Boot file name"
+        optionCode="bootfile-name"
+        optionMode="quotes"
         dialogInputbox
         ;;
     "Exclude an IP")
@@ -269,7 +289,7 @@ do
         else
             rangeEnd=$(echo "$IP" | cut -d":" -f2) #Sets the ending range and subtracts by one to not include the excluded IP
             ipSubtraction
-            echo "range $rangeStart $rangeEnd;" >> $currentScope #Adds a range to the end of the scope file
+            echo "    range $rangeStart $rangeEnd;" >> $currentScope #Adds a range to the end of the scope file
             rangeStart=$(echo "$IP" | cut -d":" -f2) #Sets the starting range for the next excluded IP/end of scope and adds it by one
             ipAddition
         fi
@@ -277,8 +297,7 @@ do
     Z:*)
         rangeEnd=$(echo "$IP" | cut -d":" -f2) #Sets the ending range
         if [[ $rangeStart < $rangeEnd || $rangeStart == $rangeEnd ]]; then #Checks if the starting less than or equal to the ending range
-            range="range $rangeStart $rangeEnd;" #Sets the range
-            echo -e "$range\n}" >> $currentScope #Adds the range to the end of the scope file along with a }
+            echo -e "    range $rangeStart $rangeEnd;\n}" >> $currentScope #Adds the range to the end of the scope file along with a }
         fi
         ;;
     esac
