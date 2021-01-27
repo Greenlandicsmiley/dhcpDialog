@@ -48,7 +48,7 @@ dialogInputbox () {
     exec 3>&-
     if ! [[ -z $optionResult ]]; then
         case $optionMode in
-        "single") #Checks if the option is supposed to be single value
+        single) #Checks if the option is supposed to be single value
             if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists in the scope file
                 optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number for the option
                 sed -i "${optionLine}s|.*|    option ${optionCode} ${optionResult};|" $currentScope #Replaces the entire line with the desired value
@@ -57,7 +57,7 @@ dialogInputbox () {
                 sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
             fi
             ;;
-        "multi") #Checks if the option is supposed to have multiple values
+        multi) #Checks if the option is supposed to have multiple values
             if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists
                 optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number of the desired option to be added on
                 sed -i "${optionLine}s|;|, ${optionResult};|" $currentScope #Replaces the existing semicolon with the desired value
@@ -66,7 +66,7 @@ dialogInputbox () {
                 sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and places a } at the end of the file
             fi
             ;;
-        "quotes") #Checks if the option is supposed to be in quotes
+        quotes) #Checks if the option is supposed to be in quotes
             if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists
                 optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number of the option
                 sed -i "${optionLine}s|.*|    option ${optionCode} \"${optionResult}\";|" $currentScope #Replaces the entire line with the desired value: Reason for replacing the entire line: Most options where quotes are needed are usually single value. Will add support for multiple values if requested. You can also add it youself ;) it's open source anyway
