@@ -86,7 +86,7 @@ while [[ $mainMenuResult != "Exit" ]]; do
     mainMenuResult=$(dialog --menu "Options" 0 0 0 \
     1 "Edit scope(s) (CURRENTLY NOT AVAILABLE)" \
     2 "Add scope(s)" \
-    3 "Delete scope(s) (CURRENTLY NOT AVAILABLE)" \
+    3 "Delete scope(s)" \
     4 "About" \
     "Exit" "" 2>&1 1>&3)
     exec 3>&-
@@ -107,9 +107,25 @@ while [[ $mainMenuResult != "Exit" ]]; do
         fi
         ;;
     3)
-        exec 3>&1
-        deleteScope=$(dialog --inputbox "Which scope do you want to delete? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
-        exec 3>&-
+        if ! [[ -z $(dir $scopeFolder) ]]; then
+            fileNumber=1 #Sets the file number to 1 to populate the dialog msgbox
+            filesOutput=($(dir $scopeFolder)) #Makes an array of files that are in scopeFolder
+            
+            for file in ${filesOutput[*]}; do #Repeatedly adds items to arrays to dynamically create a checklist box
+                scopeFiles+="$file $fileNumber off "
+                let "fileNumber += 1"
+            done
+            
+            exec 3>&1
+            scopeDelete=($(dialog --checklist "Delete scope(s)" 0 0 0 $scopeFiles 2>&1 1>&3))
+            exec 3>&-
+            
+            for fileDelete in ${scopeDelete[*]}; do #Deletes all files that are selected in the checklist box
+                rm "$scopeFolder/$fileDelete"
+            done
+        else
+            dialog --msgbox "The dhcp scopes folder is empty!" 0 0
+        fi
         ;;
     4)
         dialog --msgbox "This script is for use with managing dhcp scopes.\nCopyright (C) 2021  Thomas Petersen/Greenlandicsmiley\n\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <https://www.gnu.org/licenses/>.\n\nContact the author via email: greenlandicsmiley@gmail.com\nor via reddit: www.reddit.com/user/Greenlandicsmiley" 0 0 #Copyright notice and
