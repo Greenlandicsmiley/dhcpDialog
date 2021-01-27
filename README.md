@@ -15,7 +15,7 @@ ISCs dhcp server is necessarily not needed as this script only creates a file th
 
 Manual intervention:
 
-By default: the script uses "dhcpdScopes" folder for scope options and "exclusions" as the folder for excluded IPs. If using defaults, then place the script in it's own folder (the user chooses where) and make the two folders where the script has been put in. The conf file is generated in the folder the script has been put in. You can change the name of the conf file in the script. If you want to change the path of the scopes and excluded IP folders, then you can change it in the script. They're set at the start of the script.
+By default: the script uses "dhcpdScopes" folder for scope options and "exclusions" as the folder for excluded IPs. The conf file is generated in the folder the script has been put in. You can change the name of the conf file in the script. If you want to change the path of the scopes and excluded IP folders, then you can change it in the script. They're set at the start of the script, though you must make those folders yourself.
 
 Either of the folder variables MUST NOT end in a forward slash.
 
