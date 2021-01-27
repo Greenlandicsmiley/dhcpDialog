@@ -1,15 +1,17 @@
 # dhcpdDialog
-Bash script for managing dhcpd scopes with (GNU) Dialog
+Bash script for managing (IPv4) dhcpd scopes with (GNU) Dialog
 
 THIS IS NOT FOR COMPLETE dhcpd configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
 
 This isc dhcpd server tool is work in progress.
 
-DEPENDENCIES (That I know so far):
+Dependencies (That I know so far):
 
 Dialog (Tested with v1:1.3_20201126-1 on Arch)
 
 Bash (Tested with v5.1.004-1 on Arch)
+
+ISCs dhcp server is necessarily not needed as this script only creates a file that the dhcp server can use. This script does not touch the dhcp server configuration file.
 
 Manual intervention:
 
@@ -17,4 +19,4 @@ By default: the script uses "dhcpdScopes" folder for scope options and "exclusio
 
 Either of the folder variables MUST NOT end in a forward slash.
 
-Add "include "/path/to/confFile";" at the end of the dhcpd configuration file (or in the middle)
+Add 'include "/path/to/confFile";' at the end of the dhcpd configuration file (or in the middle)
