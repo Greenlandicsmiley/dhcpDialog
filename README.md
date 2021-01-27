@@ -20,3 +20,5 @@ By default: the script uses "dhcpdScopes" folder for scope options and "exclusio
 Either of the folder variables MUST NOT end in a forward slash.
 
 Add 'include "/path/to/confFile";' at the end of the dhcpd configuration file (or in the middle)
+
+Due to using rm when deleting scopes, I recommend that you use a different user that only has access to the tools folder(s).
