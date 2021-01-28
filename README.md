@@ -1,7 +1,7 @@
 # dhcpdDialog
-Bash script for managing (IPv4) dhcpd scopes with (GNU) Dialog
+Bash script for managing (IPv4) dhcpd scopes with (GNU?) Dialog
 
-THIS IS NOT FOR COMPLETE dhcpd configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
+THIS IS NOT FOR COMPLETE dhcp configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
 
 This isc dhcpd server tool is work in progress.
 
@@ -19,6 +19,6 @@ By default: the script uses "dhcpdScopes" folder for scope options and "exclusio
 
 Either of the folder variables MUST NOT end in a forward slash.
 
-Add 'include "/path/to/confFile";' at the end of the dhcpd configuration file (or in the middle)
+Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (or in the middle)
 
 Due to using rm when deleting scopes, I recommend that you use a different user that only has access to the tools folder(s).
