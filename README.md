@@ -1,4 +1,4 @@
-# dhcpdDialog
+# dhcpDialog
 Bash script for managing (IPv4) dhcpd scopes with (GNU?) Dialog
 
 THIS IS NOT FOR COMPLETE dhcp configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
@@ -22,3 +22,5 @@ Either of the folder variables MUST NOT end in a forward slash.
 Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (or in the middle)
 
 Due to using rm when deleting scopes, I recommend that you use a different user that only has access to the tool's folder(s).
+
+Currently working on: Editing, deleting, using relative path correctly
