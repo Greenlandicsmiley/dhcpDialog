@@ -1,11 +1,9 @@
 # dhcpDialog
-Bash script for managing (IPv4) dhcpd scopes with (GNU?) Dialog
+Bash script for managing (IPv4) ISC dhcp server scopes with (GNU?) Dialog as an interface
 
 THIS IS NOT FOR COMPLETE dhcp configuration, ONLY FOR SCOPE/NETWORK OPTIONS.
 
 This isc dhcpd server tool is work in progress.
-
-Dependencies (That I know so far):
 
 As of 30-01/2021, I'm working on this script on an Arch Linux machine, so I've tested the latest versions of these: Bash, Dialog, Coreutils
 
