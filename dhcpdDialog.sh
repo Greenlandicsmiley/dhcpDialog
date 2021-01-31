@@ -7,10 +7,6 @@ exclusionsFolder="$actualPath/exclusions"
 LICENSE="$actualPath/LICENSE"
 
 #Functions
-debug() { #For checking if script passes a certain line/function
-    dialog --msgbox "$1" 0 0 
-}
-
 ipAddition () {
     rangeStart="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(expr $(echo $rangeStart | cut -d"." -f4) + 1)" #Adds 1 to last octet of IP, if it results in 256, then it is passed down to 3rd octet. 
     if [[ $(echo $rangeStart | cut -d"." -f4 ) -ge 256 ]]; then
