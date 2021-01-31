@@ -21,4 +21,4 @@ Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (
 
 Due to using rm when deleting scopes, I recommend that you use a different user that only has access to the tool's folder(s).
 
-Currently working on: Editing, deleting, using relative path correctly
+Currently working on: Making the script more readable and better
