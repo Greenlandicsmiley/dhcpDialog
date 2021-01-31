@@ -7,9 +7,7 @@ This isc dhcpd server tool is work in progress.
 
 Dependencies (That I know so far):
 
-Dialog (Tested with v1:1.3_20201126-1 on Arch)
-
-Bash (Tested with v5.1.004-1 on Arch)
+As of 30-01/2021, I'm working on this script on an Arch Linux machine, so I've tested the latest versions of these: Bash, Dialog, Coreutils
 
 ISCs dhcp server is necessarily not needed as this script only creates a file that the dhcp server can use. This script does not touch the dhcp server configuration file.
 
