@@ -2,7 +2,7 @@
 
 actualPath=$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)
 scopeFolder="$actualPath/dhcpScopes"
-confFile="$actualPath/dhcpDialog.conf"
+confFile="$actualPath/scopes.conf"
 exclusionsFolder="$actualPath/exclusions"
 LICENSE="$actualPath/LICENSE"
 
