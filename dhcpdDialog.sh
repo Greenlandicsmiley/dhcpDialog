@@ -44,36 +44,19 @@ dialogInputbox () {
     optionResult=$(dialog --inputbox "$optionName" 0 0 2>&1 1>&3) #An input box to get user input for the chosen option
     exec 3>&-
     if ! [[ -z $optionResult ]]; then
-        case $optionMode in
-        single) #Checks if the option is supposed to be single value
-            if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists in the scope file
-                optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number for the option
-                sed -i "${optionLine}s|.*|    option ${optionCode} ${optionResult};|" $currentScope #Replaces the entire line with the desired value
-            else
-                curvedLineNumber=$(grep -n "}" $currentScope | cut -d":" -f1) #Gets the line number of }
-                sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
-            fi
-            ;;
-        multi) #Checks if the option is supposed to have multiple values
-            if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists
+        if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists in the scope file
+            if [[ $optionMode == "multi" ]]; then #Checks if the option can have multiple values.
                 optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number of the desired option to be added on
                 sed -i "${optionLine}s|;|, ${optionResult};|" $currentScope #Replaces the existing semicolon with the desired value
             else
-                curvedLineNumber=$(grep -n "}" $currentScope | cut -d":" -f1) #Gets the line number of }
-                sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and places a } at the end of the file
+                optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number for the option
+                sed -i "${optionLine}s|.*|    option ${optionCode} ${optionResult};|" $currentScope #Replaces the entire line with the desired value
             fi
-            ;;
-        quotes) #Checks if the option is supposed to be in quotes
-            if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists
-                optionLine=$(grep -n "$optionCode " $currentScope | cut -d":" -f1) #Gets the line number of the option
-                sed -i "${optionLine}s|.*|    option ${optionCode} \"${optionResult}\";|" $currentScope #Replaces the entire line with the desired value: Reason for replacing the entire line: Most options where quotes are needed are usually single value. Will add support for multiple values if requested. You can also add it youself ;) it's open source anyway
-            else
-                curvedLineNumber=$(grep -n "}" $currentScope | cut -d":" -f1) #Gets the line number of }
-                sed -i "${curvedLineNumber}s|.*|    option ${optionCode} \"${optionResult}\";\n}|" $currentScope #Replaces the entire line with the desired option to be added and places a } at the end of the file
-            fi
-            ;;
-        esac
-        cat $scopeFolder/s*.n* > $confFile
+        else
+            curvedLineNumber=$(grep -n "}" $currentScope | cut -d":" -f1) #Gets the line number of }
+            sed -i "${curvedLineNumber}s|.*|    option ${optionCode} ${optionResult};\n}|" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
+        fi
+        cat $scopeFolder/s*.n* > $confFile #Generates the configuration file
     fi
 }
 
@@ -207,6 +190,7 @@ while [[ $mainMenuResult != "Exit" ]]; do
             elif [[ $optionEdit == "Add_an_option" ]]; then
                 dialogAddMenu
             fi
+        cat $scopeFolder/s*.n* > $confFile #Generates the configuration file
         done
         ;;
     2)
@@ -217,8 +201,7 @@ while [[ $mainMenuResult != "Exit" ]]; do
             subnet=$(echo $networkResult | cut -d" " -f1) #Sets the current subnet to what the user put in
             netmask=$(echo $networkResult | cut -d" " -f2) #Sets the current netmask to what the user put in
             currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
-            rm $currentScope #Deletes the scope file to prevent the user from adding on to an existing scope file
-            echo -e "subnet $subnet netmask $netmask{\n}" >> $currentScope #Places the subnet and netmask info into the file
+            echo -e "subnet $subnet netmask $netmask{\n}" > $currentScope #Places the subnet and netmask info into the file
             dialogAddMenu
         fi
         ;;
@@ -244,6 +227,7 @@ while [[ $mainMenuResult != "Exit" ]]; do
                     rm "$scopeFolder/$fileDelete"
                 done
             fi
+            cat $scopeFolder/s*.n* > $confFile #Generates the configuration file
         else
             dialog --msgbox "The dhcp scopes folder is empty!" 0 0
         fi
@@ -302,13 +286,11 @@ while ! [[ $menuResult == "Back" ]]; do
     1)
         optionName="Subnet mask"
         optionCode="subnet-mask"
-        optionMode="single"
         dialogInputbox
         ;;
     3)
         optionName="Router(s)"
         optionCode="routers"
-        optionMode="single"
         dialogInputbox
         ;;
     4)
@@ -325,20 +307,17 @@ while ! [[ $menuResult == "Back" ]]; do
         ;;
     15)
         optionName="Domain name"
-        optionCode="domain-name"
-        optionMode="quotes"
+        optionCode="\"domain-name\""
         dialogInputbox
         ;;
     28)
         optionName="Broadcast address"
         optionCode="broadcast-address"
-        optionMode="single"
         dialogInputbox
         ;;
     33)
         optionName="Static route(s)"
         optionCode="static-routes"
-        optionMode="multi"
         dialogInputbox
         ;;
     42)
@@ -349,17 +328,16 @@ while ! [[ $menuResult == "Back" ]]; do
         ;;
     66)
         optionName="TFTP server"
-        optionCode="tftp-server-name"
-        optionMode="quotes"
+        optionCode="\"tftp-server-name\""
         dialogInputbox
         ;;
     67)
         optionName="Boot file name"
-        optionCode="bootfile-name"
-        optionMode="quotes"
+        optionCode="\"bootfile-name\""
         dialogInputbox
         ;;
     "Exclude_an_IP")
+        exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
         if $(grep -q "X:" $exclusionsFile) && $(grep -q "Z:" $exclusionsFile); then #Checks if a scope range has been set
             exec 3>&1
             excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
@@ -437,12 +415,23 @@ do
         ;;
     Z:*)
         rangeEnd=$(echo "$IP" | cut -d":" -f2) #Sets the ending range
-        if [[ $rangeStart < $rangeEnd || $rangeStart == $rangeEnd ]]; then #Checks if the starting less than or equal to the ending range
+        printf -v ip1 "%03d" $(echo $rangeStart | cut -d"." -f1) #Workaround for bug when setting a scope range like 10.1.0.5 10.1.0.15 where the script thinks 10.1.0.5 is bigger than 10.1.0.15
+        printf -v ip2 "%03d" $(echo $rangeStart | cut -d"." -f2)
+        printf -v ip3 "%03d" $(echo $rangeStart | cut -d"." -f3)
+        printf -v ip4 "%03d" $(echo $rangeStart | cut -d"." -f4)
+        rangeStart2="$ip1$ip2$ip3$ip4"
+        printf -v ip5 "%03d" $(echo $rangeEnd | cut -d"." -f1)
+        printf -v ip6 "%03d" $(echo $rangeEnd | cut -d"." -f2)
+        printf -v ip7 "%03d" $(echo $rangeEnd | cut -d"." -f3)
+        printf -v ip8 "%03d" $(echo $rangeEnd | cut -d"." -f4)
+        rangeEnd2="$ip5$ip6$ip7$ip8" #End of workaround
+        if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == $rangeEnd2 ]]; then #Checks if the starting less than or equal to the ending range
             echo -e "    range $rangeStart $rangeEnd;\n}" >> $currentScope #Adds the range to the end of the scope file along with a }
         fi
         ;;
     esac
 done
+cat $scopeFolder/s*.n* > $confFile #Generates the configuration file
 }
 
 dialogMainMenu
