@@ -391,7 +391,7 @@ fi
 scopeGenerate () { #This function generates scope ranges according to excluded IPs in the exclusions file
 exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
 currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
-sort -t . -k 3,3n -k 4,4n -o $exclusionsFile $exclusionsFile #Sorts the exclusions file and outputs it to the exclusions file to not confuse the generator
+sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o $exclusionsFile $exclusionsFile #Sorts the exclusions file and outputs it to the exclusions file to not confuse the generator
 echo $(sed "$(grep -n "X:" $exclusionsFile | cut -d":" -f1),$(grep -n "Z:" $exclusionsFile | cut -d":" -f1)!d" $exclusionsFile) > $exclusionsFile #Removes IPs that are outside the scope
 sed -i "s| |\n|g" $exclusionsFile #Replaces spaces with newline
 for IP in $(cat $exclusionsFile)
