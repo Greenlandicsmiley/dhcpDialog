@@ -23,7 +23,7 @@ Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (
 
 
 
-**Currently working on**: Making the script more readable and better. Update from the interface to different distros (you can already add that yourself).
+**Currently working on**: Making the script more readable and better. Update from the interface on different distros (you can already add that yourself).
 
 **Why would anyone need/use this?**
 
