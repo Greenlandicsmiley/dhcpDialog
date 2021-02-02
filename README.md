@@ -27,4 +27,4 @@ Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (
 
 **Why would anyone need/use this?**
 
-Some teams are scared to use the terminal, so I made this script to make it easier to manage DHCP scopes. So instead of using commands like nano /etc/dhcp.conf, you get to use the dialog interface. This is a good way to introduce Linux to others.
+Some teams are scared to use the terminal, so I made this script to make it easier to manage DHCP scopes. So instead of using commands like nano /etc/dhcpd.conf, you get to use the dialog interface. This is a good way to introduce Linux to others.
