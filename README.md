@@ -1,5 +1,5 @@
 # dhcpDialog
-Bash script for managing (IPv4) ISC dhcp server scopes with (GNU?) Dialog as an interface.
+Bash script for managing (IPv4) ISC dhcp server scopes with Dialog as an interface.
 
 This isc dhcpd server tool is work in progress.
 
