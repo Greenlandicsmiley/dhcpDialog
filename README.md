@@ -23,7 +23,9 @@ Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (
 
 
 
-**Currently working on**: Making the script more readable and better. Update from the interface on different distros (you can already add that yourself). To do: remove time-servers option, because I found out it's obsolete. Working on CLI version right now.
+**Currently working on**: Making the script more readable and better. Update from the interface on different distros (you can already add that yourself). 
+To do: remove time-servers option, because I found out it's obsolete. 
+Halted: Working on CLI version right now. 
 
 **Why would anyone need/use this?**
 
