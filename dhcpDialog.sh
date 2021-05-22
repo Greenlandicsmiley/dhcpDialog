@@ -1,7 +1,5 @@
 #!/bin/bash
 
-dialog --msgbox "This is a script for development, please do not use this" 0 0
-
 #File paths
 actualPath=$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)
 scopeFolder="$actualPath/dhcpScopes"
