@@ -23,8 +23,6 @@ Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (
 
 
 
-**Currently working on**: Making the script more readable and better. Update from the interface on different distros (you can already add that yourself).
-
 **Why would anyone need/use this?**
 
 Some teams are scared to use the terminal, so I made this script to make it easier to manage DHCP scopes. So instead of using commands like nano /etc/dhcpd.conf (Nano should already be easy to use), you get to use the dialog interface. This is a good way to introduce Linux to others.
