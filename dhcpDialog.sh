@@ -1,5 +1,7 @@
 #!/bin/bash
 
+dialog --msgbox "This is a new revised version. If you encounter errors, halts or if you find out the configuration are not correct, then please contact me. My contact info is in the about menu." 0 0
+
 #File paths
 actualPath=$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)
 scopeFolder="$actualPath/dhcpScopes"
