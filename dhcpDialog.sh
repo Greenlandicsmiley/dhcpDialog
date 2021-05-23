@@ -76,7 +76,7 @@ dialogInputbox() {
         else
             sed -i "/}/s_.*_    option ${optionCode} ${optionResult};\n}_" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
         fi
-        cat $scopeFolder/s*.n* > $confFile #Generates the configuration file
+        serviceRestart
     fi
 }
 
