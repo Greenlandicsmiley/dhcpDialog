@@ -1,6 +1,9 @@
 #!/bin/bash
 
-dialog --msgbox "This is a new revised version. If you encounter errors, halts or if you find out the configurations are not correct, then please contact me or open an issue via Github. My contact info is in the about menu." 0 0
+serviceRestartTrue=0
+if [[ $serviceRestartTrue -eq 0 ]]; then
+    dialog --msgbox "Please insert a service restart command on line 25 and set the serviceRestartTrue to 1 on line 3 in the script itself. If you are not the person who set this up, contact the person who set this up." 0 0
+fi
 
 #File paths
 actualPath=$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)
@@ -16,6 +19,13 @@ declare -A optionKeytoName
 optionKeytoName=(["subnet-mask"]="Subnet_mask" ["routers"]="Router(s)" ["domain-name-servers"]="DNS_server(s)" ["domain-name"]="Domain_name" ["broadcast-address"]="Broadcast_address" ["static-routes"]="Static_route(s)" ["ntp-servers"]="NTP_server(s)" ["tftp-server-name"]="TFTP_server(s)" ["bootfile-name"]="Boot_file_name")
 
 #Functions
+serviceRestart() { #Function for generating the config file and restarting dhcpd service
+    cat $scopeFolder/s*.n* > $confFile
+    #sudo cp $confFile /etc/dhcpDialog.conf #Feel free to use this or do it your own way to make the config file usable for dhcpd
+    ##Insert the service restart command here, this usually requires sudo or doas
+    #sudo systemctl restart dhcpd4 #Example for Arch Linux, don't know how it would be for RHEL based distros, Debian based distros or for other distros
+}
+
 ipAddition() {
     rangeStart="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(expr $(echo $rangeStart | cut -d"." -f4) + 1)" #Adds 1 to last octet of IP, if it results in 256, then it is passed down to 3rd octet. 
     if [[ $(echo $rangeStart | cut -d"." -f4 ) -ge 256 ]]; then
@@ -308,7 +318,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         fi
         ;;
     esac
-    cat $scopeFolder/s*.n* > $confFile
+    serviceRestart
 done
 }
 
@@ -397,7 +407,7 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
             ;;
         esac
     done
-    cat $scopeFolder/s*.n* > $confFile #Generates the configuration file
+    serviceRestart
 }
 
 dialogMainMenu
