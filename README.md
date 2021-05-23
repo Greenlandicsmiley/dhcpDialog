@@ -9,9 +9,11 @@ ISCs dhcp server is necessarily not needed as this script only creates a file th
 
 **Manual intervention:**
 
+There's a function called serviceRestart starting at line 22 that generates a config file. Due to user permissions the dhcpd service cannot access the contents of the configuration file, so I have inserted an example command that copies the configuration file to /etc/dhcpDialog.conf. You can either use it or use a different file path/command. There is also an example command that restarts the dhcpd systemd service, you should also change that according to your distro.
+
 If not using default folder path: Make the folders where you want to make them, and then set the paths in the script (remember to remove $actualPath from the folder variables). Folder variables must not end with a /.
 
-If using default: The script uses "dhcpScopes" folder for scope options and "exclusions" as the folder for excluded IPs. The conf file is generated in the folder the script has been put in. You can change the name of the conf file in the script. 
+If using default: The script uses "dhcpScopes" folder for scope options and "exclusions" as the folder for excluded IPs. The conf file is generated in the folder the script has been put in. You can change the path/name of the conf file in the script. 
 
 Create a user with a home folder, then download and move dhcpDialog to the users home folder. This is recommended due to using rm when deleting scopes. I do not trust my own abilities with coding to trust deleting files.
 
