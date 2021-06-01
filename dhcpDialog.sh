@@ -87,8 +87,9 @@ dialogMainMenu() {
         1 "Edit scope(s)" \
         2 "Add scope(s)" \
         3 "Delete scope(s)" \
-        4 "About" \
-        5 "View the entire license" \
+        4 "View leases" \
+        5 "About" \
+        6 "View the entire license" \
         "Exit" "" 2>&1 1>&3)
         exec 3>&-
         case $mainMenuResult in
@@ -167,7 +168,40 @@ dialogMainMenu() {
         4)
             dialog --msgbox "This script is for use with managing dhcp scopes.\nCopyright (C) 2021  Thomas Petersen/Greenlandicsmiley\n\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <https://www.gnu.org/licenses/>.\n\nContact the author via email: greenlandicsmiley@gmail.com\nor via reddit: www.reddit.com/user/Greenlandicsmiley" 0 0 #Copyright notice and
             ;;
+        4)
+            echo "" > $activeLeasesFile #Clear the active leases file
+            leasesDump=$(grep -n "lease.*{\|}" $leasesFile | sed "s_lease __" | sed "s_ {__") #Create a dump of all the logged leases in /var/lib/dhcp/dhcpd.leases
+            leasesDump=$(echo $leasesDump | sed "s_} _},_g" | sed "s_ _:_g" | sed "s_,_ _g") #Filter it out further
+            for lease in $leasesDump; do #Go through all the leases
+                if [[ $(echo $lease | cut -d":" -f1) == $(grep -n "lease $(echo $lease | cut -d":" -f2)" $leasesFile | tail -n 1 | cut -d":" -f1) ]]; then #Check if the current lease being check is the latest
+                    startLine=$(echo $lease | cut -d":" -f1) #Get the starting line number of the lease
+                    endLine=$(echo $lease | cut -d":" -f3) #Get the ending line number of the lease
+                    for activeLease in $(grep -n "binding state active" $leasesFile | cut -d":" -f1); do #Go through all leases active leases
+                        if [[ $activeLease -gt $startLine && $activeLease -lt $endLine ]]; then #Check if the lease being checked is an active lease
+                            sed -n "${startLine},${endLine}p" $leasesFile >> $activeLeasesFile #Output the lease into a file
+                            leasesMenu+="$(echo $lease | cut -d":" -f2) . " #Add the lease to a dialog menu
+                        fi
+                    done
+                fi
+            done
+            sed -i "1d" $activeLeasesFile #Delete the first line of active leases file to look nicer
+            leasesDump=$(grep -n "lease.*{\|}" $activeLeasesFile | sed "s_lease __" | sed "s_ {__") #Create a dump of all the logged leases in the latest.leases file
+            leasesDump=$(echo $leasesDump | sed "s_} _},_g" | sed "s_ _:_g" | sed "s_,_ _g") #Filter it out further
+            exec 3>&1
+            leaseMenu=$(dialog --no-cancel --menu "View active leases" 0 0 0 $leasesMenu 2>&1 1>&3) #Menu for viewing leases inside a dialog menu
+            exec 3>&-
+            for lease in $leasesDump; do #Go through all leases in the latest.leases file
+                if [[ $(echo $lease | cut -d":" -f2) == $leaseMenu ]]; then
+                    startLine=$(echo $lease | cut -d":" -f1) #Get the starting line number of the lease
+                    endLine=$(echo $lease | cut -d":" -f3) #Get the ending line number of the lease
+                fi
+            done
+            dialog --msgbox "$(sed -n "${startLine},${endLine}p" $activeLeasesFile)" 0 0 #Display the selected lease
+            ;;
         5)
+            dialog --msgbox "This script is for use with managing dhcp scopes.\nCopyright (C) 2021  Thomas Petersen/Greenlandicsmiley\n\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <https://www.gnu.org/licenses/>.\n\nContact the author via email: greenlandicsmiley@gmail.com\nor via reddit: www.reddit.com/user/Greenlandicsmiley" 0 0 #Copyright notice and author contact information
+            ;;
+        6)
             dialog --textbox $LICENSE 0 0
             ;;
         esac
