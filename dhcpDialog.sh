@@ -11,6 +11,8 @@ scopeFolder="$actualPath/dhcpScopes"
 confFile="$actualPath/dhcpDialog.conf"
 exclusionsFolder="$actualPath/exclusions"
 LICENSE="$actualPath/LICENSE"
+leasesFile="/var/lib/dhcp/dhcpd.leases"
+activeLeasesFile="$actualPath/latest.leases"
 
 #Arrays
 hashKeys=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
@@ -160,7 +162,7 @@ dialogMainMenu() {
                         rm "$exclusionsFolder/$fileDelete"
                     done
                 fi
-                cat $scopeFolder/s*.n* > $confFile #Generates the configuration file
+                serviceRestart
             else
                 dialog --msgbox "The dhcp scopes folder is empty!" 0 0
             fi
