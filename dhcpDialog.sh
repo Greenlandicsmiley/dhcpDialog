@@ -168,9 +168,6 @@ dialogMainMenu() {
             fi
             ;;
         4)
-            dialog --msgbox "This script is for use with managing dhcp scopes.\nCopyright (C) 2021  Thomas Petersen/Greenlandicsmiley\n\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <https://www.gnu.org/licenses/>.\n\nContact the author via email: greenlandicsmiley@gmail.com\nor via reddit: www.reddit.com/user/Greenlandicsmiley" 0 0 #Copyright notice and
-            ;;
-        4)
             echo "" > $activeLeasesFile #Clear the active leases file
             leasesDump=$(grep -n "lease.*{\|}" $leasesFile | sed "s_lease __" | sed "s_ {__") #Create a dump of all the logged leases in /var/lib/dhcp/dhcpd.leases
             leasesDump=$(echo $leasesDump | sed "s_} _},_g" | sed "s_ _:_g" | sed "s_,_ _g") #Filter it out further
