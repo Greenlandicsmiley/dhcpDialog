@@ -8,13 +8,17 @@ if [[ $serviceRestartTrue -eq 0 ]]; then
 fi
 
 #File paths
-actualPath=$(cd "$(dirname "${BASH_SOURCE[0]}")"; pwd -P)
-scopeFolder="$actualPath/dhcpScopes"
-confFile="$actualPath/dhcpDialog.conf"
-exclusionsFolder="$actualPath/exclusions"
-LICENSE="$actualPath/LICENSE"
-leasesFile="/var/lib/dhcp/dhcpd.leases"
-activeLeasesFile="$actualPath/latest.leases"
+optFolder=/opt/dhcpDialog
+confFile=/opt/dhcpDialog/dhcpDialog.conf
+
+scopeFolder="$(grep "scopeFolder" $confFile | cut -d":" -f2)"
+exclusionsFolder="$(grep "exclusionsFolder" $confFile | cut -d":" -f2)"
+dhcpdConfFile="$(grep "dhcpd.conf" $confFile | cut -d":" -f2)"
+LICENSE="$optFolder/LICENSE"
+ABOUT="$optFolder/ABOUT"
+leasesFile="path"
+activeLeasesFile="$optFolder/latest.leases"
+serversFile="$optFolder/servers.list"
 
 #Arrays
 hashKeys=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
@@ -23,11 +27,10 @@ declare -A optionKeytoName
 optionKeytoName=(["subnet-mask"]="Subnet_mask" ["routers"]="Router(s)" ["domain-name-servers"]="DNS_server(s)" ["domain-name"]="Domain_name" ["broadcast-address"]="Broadcast_address" ["static-routes"]="Static_route(s)" ["ntp-servers"]="NTP_server(s)" ["tftp-server-name"]="TFTP_server(s)" ["bootfile-name"]="Boot_file_name")
 
 #Functions
-serviceRestart() { #Function for generating the config file and restarting dhcpd service
-    cat $scopeFolder/s*.n* > $confFile
-    #sudo cp $confFile /etc/dhcpDialog.conf #Feel free to use this or do it your own way to make the config file usable for dhcpd
+serviceRestart() {
+    cat $scopeFolder/s*.n* > $dhcpdConfFile
     ##Insert the service restart command here, this usually requires sudo or doas
-    #sudo systemctl restart dhcpd4 #Example for Arch Linux, don't know how it would be for RHEL based distros, Debian based distros or for other distros
+    #service
 }
 
 ipAddition() {
@@ -166,7 +169,7 @@ dialogMainMenu() {
                 fi
                 serviceRestart
             else
-                dialog --msgbox "The dhcp scopes folder is empty!" 0 0
+                dialog --msgbox "There are no dhcp scopes!" 0 0
             fi
             ;;
         4)
@@ -200,10 +203,10 @@ dialogMainMenu() {
             dialog --msgbox "$(sed -n "${startLine},${endLine}p" $activeLeasesFile)" 0 0 #Display the selected lease
             ;;
         5)
-            dialog --msgbox "This script is for use with managing dhcp scopes.\nCopyright (C) 2021  Thomas Petersen/Greenlandicsmiley\n\nThis program is free software: you can redistribute it and/or modify\nit under the terms of the GNU General Public License as published by\nthe free Software Foundation, either version 3 of the License, or\n(at your option) any later version.\n\nThis program is distributed in the hope that it will be useful,\nbut WITHOUT ANY WARRANTY; without even the implied warranty of\nMERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the\nGNU General Public License for more details.\nYou should have received a copy of the GNU General Public License\nalong with this program.  If not, see <https://www.gnu.org/licenses/>.\n\nContact the author via email: greenlandicsmiley@gmail.com\nor via reddit: www.reddit.com/user/Greenlandicsmiley" 0 0 #Copyright notice and author contact information
+            dialog --textbox $ABOUT 0 0 #Copyright notice and author contact information
             ;;
         6)
-            dialog --textbox $LICENSE 0 0
+            dialog --textbox $LICENSE 0 0 #Copy of GPL3.0 license
             ;;
         esac
     done
