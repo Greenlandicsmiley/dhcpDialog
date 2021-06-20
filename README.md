@@ -1,13 +1,13 @@
 # dhcpDialog
 Bash script for managing (IPv4) ISC dhcp server scopes with Dialog as an interface.
 
-**What's needed?**
+## What's needed?
 
 Tested on latest versions of: Coreutils, Bash, Dialog.
 
 ISCs dhcp server is necessarily not needed as this script only creates a file that the dhcp server can use. This script does not touch the dhcp server configuration file.
 
-**Manual intervention:**
+## Manual intervention:
 
 There's a function called serviceRestart starting at line 22 that generates a config file. Due to user permissions the dhcpd service cannot access the contents of the configuration file, so I have inserted an example command that copies the configuration file to /etc/dhcpDialog.conf. You can either use it or use a different file path/command. There is also an example command that restarts the dhcpd systemd service, you should also change that according to your distro.
 
@@ -23,12 +23,12 @@ Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (
 
 
 
-**Why would anyone need/use this?**
+## Why would anyone need/use this?
 
 Some teams are scared to use the terminal, so I made this script to make it easier to manage DHCP scopes. So instead of using commands like nano /etc/dhcpd.conf (Nano should already be easy to use), you get to use the dialog interface. This is a good way to introduce Linux to others.
 
 
-**Upcoming changes**
+## Upcoming changes
 
 IP scope range usage, view leases specific to networks. I need to wrap my head around filtering IP subnets and networks, so give it some time.
 
