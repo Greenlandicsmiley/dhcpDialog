@@ -10,7 +10,7 @@ Coreutils, Bash, Dialog, ISC dhcp server not necessarily needed.
 
 ## Manual intervention:
 
-### serviceRestart: line 22
+### serviceRestart: line 24
 
 Insert a copy command to the serviceRestart() function.
 
