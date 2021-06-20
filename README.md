@@ -1,8 +1,6 @@
 # dhcpDialog
-<p align="center">
   <a href="./LICENSE"><img src="https://img.shields.io/github/license/Greenlandicsmiley/dhcpDialog?color=Green&style=flat-square"></a>
   <a href="https://github.com/Greenlandicsmiley/dhcpDialog/releases"><img src="https://img.shields.io/github/v/tag/Greenlandicsmiley/dhcpDialog?color=Green&style=flat-square"></a>
-</p>
 
 Bash script for managing (IPv4) ISC dhcp server scopes with Dialog as an interface.
 
