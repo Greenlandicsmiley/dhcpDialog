@@ -1,26 +1,27 @@
 # dhcpDialog
 Bash script for managing (IPv4) ISC dhcp server scopes with Dialog as an interface.
 
-## What's needed?
+## Requirements:
 
-Tested on latest versions of: Coreutils, Bash, Dialog.
-
-ISCs dhcp server is necessarily not needed as this script only creates a file that the dhcp server can use. This script does not touch the dhcp server configuration file.
+Coreutils, Bash, Dialog, ISC dhcp server not necessarily needed.
 
 ## Manual intervention:
 
-There's a function called serviceRestart starting at line 22 that generates a config file. Due to user permissions the dhcpd service cannot access the contents of the configuration file, so I have inserted an example command that copies the configuration file to /etc/dhcpDialog.conf. You can either use it or use a different file path/command. There is also an example command that restarts the dhcpd systemd service, you should also change that according to your distro.
+### serviceRestart: line 22
 
-If not using default folder path: Make the folders where you want to make them, and then set the paths in the script (remember to remove $actualPath from the folder variables). Folder variables must not end with a /.
+Insert a copy command to the serviceRestart() function.
 
-If using default: The script uses "dhcpScopes" folder for scope options and "exclusions" as the folder for excluded IPs. The conf file is generated in the folder the script has been put in. You can change the path/name of the conf file in the script. 
+Insert a service restart command for the dhcpd service. Edit it according to your distribution.
 
-Create a user with a home folder, then download and move dhcpDialog to the users home folder. This is recommended due to using rm when deleting scopes. I do not trust my own abilities with coding to trust deleting files.
+### Installation (makefile underway)
 
-Add to .bashrc to execute the script, so anyone who logs in is greeted with the interface, instead of needing to run the script manually.
+Default: Make a directory somewhere accessible, then copy/clone the main github repository and start using the script.
 
-Add 'include "/path/to/conf/file";' at the end of the dhcpd configuration file (or in the middle).
+Custom: Set the file path variables in the script, remember they should not end with a /. A proper conf file is underway.
 
+Add to .bash_profile to execute the script, so anyone who logs in is greeted with the interface, instead of needing to run the script manually.
+
+Add 'include "/etc/dhcpDialog.conf";' at the end of the dhcpd configuration file (or in the middle).
 
 
 ## Why would anyone need/use this?
