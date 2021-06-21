@@ -6,9 +6,9 @@ dialog --msgbox "DEVELOPMENT ONLY" 0 0
 optFolder="/opt/dhcpDialog"
 confFile="$optFolder/dhcpDialog.conf"
 
-scopeFolder="$(grep "scopeFolder" $confFile | cut -d":" -f2)"
-exclusionsFolder="$(grep "exclusionsFolder" $confFile | cut -d":" -f2)"
-dhcpdConfFile="$(grep "dhcpd.conf" $confFile | cut -d":" -f2)"
+scopeFolder="$optFolder/dhcpScopes"
+exclusionsFolder=$optFolder/exclusions"
+dhcpdConfFile=$optFolder/dhcpd.conf"
 LICENSE="$optFolder/LICENSE"
 ABOUT="$optFolder/ABOUT"
 leasesFile="path"
