@@ -15,6 +15,8 @@ leasesFile="leasesFileReplace"
 activeLeasesFile="$optFolder/active.leases"
 serversFile="$optFolder/servers.list"
 
+VERSION="122"
+
 #Arrays
 hashKeys=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
 
@@ -483,7 +485,7 @@ if [[ $1 == "--uninstall" ]]; then
     rm -rf /opt/dhcpDialog
     rm /usr/bin/dhcpDialog
 elif [[ $1 == "--version" ]]; then
-    echo "nothing"
+    echo "$VERSION"
 elif [[ $1 == "--update" ]]; then
     echo "nothing"
 else
