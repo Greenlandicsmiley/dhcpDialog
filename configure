@@ -4,19 +4,19 @@ OS=$(hostnamectl | grep "Operating System" | cut -d":" -f2)
 
 case $OS in
     *"Arch Linux"*)
-        sed -i "/#service/s_#path_systemctl restart dhcpd_" dhcpDialog.sh
+        sed -i "/#service/s_#service_systemctl restart dhcpd_" dhcpDialog.sh
         sed -i "/leasesFile="path"/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *"Debian"*)
-        sed -i "/#service/s_#path_service isc-dhcp-server restart_" dhcpDialog.sh
+        sed -i "/#service/s_#service_service isc-dhcp-server restart_" dhcpDialog.sh
         sed -i "/leasesFile="path"/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *"Ubuntu"*)
-        sed -i "/#service/s_#path_systemctl restart isc-dhcp-server_" dhcpDialog.sh
+        sed -i "/#service/s_#service_systemctl restart isc-dhcp-server_" dhcpDialog.sh
         sed -i "/leasesFile="path"/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *"CentOS"*)
-        sed -i "/#service/s_#path_systemctl restart dhcpd_" dhcpDialog.sh
+        sed -i "/#service/s_#service_systemctl restart dhcpd_" dhcpDialog.sh
         sed -i "/leasesFile="path"/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *)
