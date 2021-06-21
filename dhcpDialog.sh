@@ -330,7 +330,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     "Set_scope_range"|"Change_scope_range")
         exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
         exec 3>&1
-        scopeRange=$(dialog --inputbox "What range do you want? Example: 192.168.1.1 192.168.1.255" 0 0 2>&1 1>&3)
+        scopeRange=$(dialog --inputbox "What range do you want? Example: 192.168.1.1 192.168.1.255. Leave empty to delete." 0 0 2>&1 1>&3)
         exec 3>&-
         if ! [[ -z $scopeRange ]]; then
             if $(grep -q "X:" $exclusionsFile); then #Checks if the user has already added a scope range
@@ -346,6 +346,9 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
                 echo "Z:$(echo $scopeRange | cut -d" " -f2)" >> $exclusionsFile
             fi
             scopeGenerate
+        else
+            sed -i "/X:/d" $exclusionsFile
+            sed -i "/Z:/d" $exclusionsFile
         fi
     ;;
     esac
