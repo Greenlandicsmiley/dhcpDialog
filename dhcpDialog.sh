@@ -4,7 +4,6 @@ dialog --msgbox "DEVELOPMENT ONLY" 0 0
 
 #File paths
 optFolder="/opt/dhcpDialog"
-confFile="$optFolder/dhcpDialog.conf"
 
 scopeFolder="$optFolder/dhcpScopes"
 exclusionsFolder="$optFolder/exclusions"
