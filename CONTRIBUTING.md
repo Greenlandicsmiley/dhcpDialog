@@ -7,7 +7,7 @@
 
 ## Operating system support
 
-Create a new issue with title: "Distribution Request: _Distribution_"
+Create a new issue with title: "Distribution Request: [_Distribution_]"
 
 Information needed to add the distribution:
 
