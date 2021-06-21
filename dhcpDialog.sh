@@ -484,10 +484,6 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
 if [[ $1 == "--uninstall" ]]; then
     rm -rf /opt/dhcpDialog
     rm /usr/bin/dhcpDialog
-elif [[ $1 == "--version" ]]; then
-    echo "$VERSION"
-elif [[ $1 == "--update" ]]; then
-    echo "nothing"
 else
     dialogMainMenu
 fi
