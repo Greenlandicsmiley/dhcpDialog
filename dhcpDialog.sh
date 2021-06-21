@@ -153,7 +153,7 @@ dialogMainMenu() {
                     let "fileNumber += 1"
                 done
                 exec 3>&1
-                scopeDelete=($(dialog --checklist "Delete scope(s) - Press space to select" 0 0 0 $scopeFiles 2>&1 1>&3))
+                scopeDelete=($(dialog --checklist "Delete scope(s) - Press space to select. Do not delete example, serviceRestart() depends on it." 0 0 0 $scopeFiles 2>&1 1>&3))
                 exec 3>&-
                 if ! [[ -z $scopeDelete ]]; then
                     exec 3>&1
