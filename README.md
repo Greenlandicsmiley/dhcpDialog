@@ -44,7 +44,6 @@ You can run `dhcpDialog --uninstall` or `make uninstall` to uninstall dhcpDialog
 
 Some teams are scared to use the terminal, so I made this script to make it easier to manage DHCP scopes. So instead of using commands like nano /etc/dhcpd.conf (Nano should already be easy to use), you get to use the dialog interface. This is a good way to introduce Linux to others.
 
-
 ## Upcoming changes
 
 IP scope range usage, view leases specific to networks. I need to wrap my head around filtering IP subnets and networks, so give it some time.
