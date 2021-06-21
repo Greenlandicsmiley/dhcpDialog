@@ -20,7 +20,7 @@ case $OS in
         sed -i "/leasesFile="path"/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *)
-        echo "Unknown operating system! Please find out how to restart the dhcp server and replace line $(grep -n "#service")!"
+        echo "Unknown operating system! Please find out how to restart the dhcp server and replace line $(grep -n "#service" dhcpDialog.sh)!"
         echo "If you want this operating system supported, then please consult the contribution manual."
         sed -i "/leasesFile="path"/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
