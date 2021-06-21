@@ -333,7 +333,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         scopeRange=$(dialog --inputbox "What range do you want? Example: 192.168.1.1 192.168.1.255" 0 0 2>&1 1>&3)
         exec 3>&-
         if ! $( -z $scopeRange); then
-            if [[ grep -q "X:" $exclusionsFile ]]; then #Checks if the user has already added a scope range
+            if $(grep -q "X:" $exclusionsFile); then #Checks if the user has already added a scope range
                 replaceLine=$(echo $scopeRange | cut -d" " -f1) #Sets the variable to the first IP the user has put in the input box
                 sed -i "/X/s|.*|X:${replaceLine}|" $exclusionsFile #Replaces the entire line with the desired scope range start
             else
