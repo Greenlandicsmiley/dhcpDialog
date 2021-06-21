@@ -10,7 +10,7 @@ exclusionsFolder="$optFolder/exclusions"
 dhcpdConfFile="$optFolder/dhcpd.conf"
 LICENSE="$optFolder/LICENSE"
 ABOUT="$optFolder/ABOUT"
-leasesFile="path"
+leasesFile="leasesFileReplace"
 activeLeasesFile="$optFolder/active.leases"
 serversFile="$optFolder/servers.list"
 
