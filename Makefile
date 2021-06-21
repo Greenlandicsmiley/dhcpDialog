@@ -15,7 +15,6 @@ install:
 	@cp -p ABOUT $(DESTDIR)$(OPTDIR)/ABOUT
 	@cp -r -p exclusions $(DESTDIR)$(OPTDIR)/exclusions
 	@cp -r -p dhcpScopes $(DESTDIR)$(OPTDIR)/dhcpScopes
-	@cp -p dhcpDialog.conf $(DESTDIR)$(OPTDIR)/dhcpDialog.conf
 	@cp -p servers.list $(DESTDIR)$(OPTDIR)/servers.list
 	@touch dhcpd.conf
 	@cp -p dhcpd.conf $(DESTDIR)$(OPTDIR)/dhcpd.conf
