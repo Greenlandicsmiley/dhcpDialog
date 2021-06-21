@@ -7,7 +7,7 @@
 
 ## Operating system support
 
-To add support for a new operating system, create a new issue with title: "Distribution Request: [_Distribution_]"
+To request support for a new operating system, create a new issue with title: "Distribution Request: [_Distribution_]"
 
 Information needed to add the distribution:
 
