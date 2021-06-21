@@ -29,7 +29,6 @@ optionKeytoName=(["subnet-mask"]="Subnet_mask" ["routers"]="Router(s)" ["domain-
 #Functions
 serviceRestart() {
     cat $scopeFolder/s*.n* > $dhcpdConfFile
-    ##Insert the service restart command here, this usually requires sudo or doas
     #service
 }
 
