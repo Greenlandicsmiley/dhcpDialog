@@ -369,7 +369,7 @@ editMenuMode() {
         sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionEditInput};_" $currentScope
     elif [[ $optionEditMode == "2" && $optionMode == "multi" ]]; then
         dialogInputbox
-    elif [[ $optionEditMode == "2" || $optionEditMode == "3" ]]; then
+    elif [[ $optionEditMode == "2" ]] || [[ $optionEditMode == "3" && $optionMode == "multi" ]]; then
         exec 3>&1
         optionEditInput=$(dialog --yesno "Are you sure you want to delete $optionCode?" 0 0 2>&1 1>&3)
         optionEditInput=$?
