@@ -371,7 +371,7 @@ editMenuMode() {
         dialogInputbox
     elif [[ $optionEditMode == "2" ]]; then
         exec 3>&1
-        optionEditInput=$(dialog --yesno "Are you sure you want to delete $optionEdit?" 0 0 2>&1 1>&3)
+        optionEditInput=$(dialog --yesno "Are you sure you want to delete $optionCode?" 0 0 2>&1 1>&3)
         optionEditInput=$?
         exec 3>&-
         if [[ $optionEditInput -eq "0" ]]; then
