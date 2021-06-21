@@ -24,6 +24,22 @@ To install the script
 
 **NOTE:** You may have to run `make install` as root.
 
+## Updating
+
+Download the latest release
+- https://github.com/Greenlandicsmiley/dhcpDialog/releases/latest
+
+To install the script
+- Make `configure` executable. I have no idea how to not require this, elp.
+- Run `./configure`
+- Run `make update` inside the script directory to install the script.
+
+**NOTE:** You may have to run `make update` as root.
+
+## Uninstall
+
+You can run `dhcpDialog --uninstall` or `make uninstall` to uninstall dhcpDialog.
+
 ## Why would anyone need/use this?
 
 Some teams are scared to use the terminal, so I made this script to make it easier to manage DHCP scopes. So instead of using commands like nano /etc/dhcpd.conf (Nano should already be easy to use), you get to use the dialog interface. This is a good way to introduce Linux to others.
