@@ -14,22 +14,12 @@ Bash version requirement currently unknown.
 
 ## Manual intervention:
 
-### serviceRestart: line 24
+## Installation
 
-Insert a copy command to the serviceRestart() function.
+Download the latest release
+- https://github.com/Greenlandicsmiley/dhcpDialog/releases/latest
 
-Insert a service restart command for the dhcpd service. Edit it according to your distribution.
-
-### Installation (makefile underway)
-
-Default: Make a directory somewhere accessible, then copy/clone the main github repository and start using the script.
-
-Custom: Set the file path variables in the script, remember they should not end with a /. A proper conf file is underway.
-
-Add to .bash_profile to execute the script, so anyone who logs in is greeted with the interface, instead of needing to run the script manually.
-
-Add 'include "/etc/dhcpDialog.conf";' at the end of the dhcpd configuration file (or in the middle).
-
+Run `make install` inside the script directory to install the script. **NOTE:** You may have to run this as root.
 
 ## Why would anyone need/use this?
 
