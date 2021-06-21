@@ -23,7 +23,11 @@ optionKeytoName=(["subnet-mask"]="Subnet_mask" ["routers"]="Router(s)" ["domain-
 
 #Functions
 serviceRestart() {
-    cat $scopeFolder/s*.n* > $dhcpdConfFile
+    if [[ $(ls $scopeFolder | wc -l) -gt 1 && $(ls $exclusionsFolder | wc -l) -gt 1 ]]; then
+        cat $scopeFolder/s*.n* > $dhcpdConfFile
+    else
+        echo "" > $dhcpdConfFile
+    fi
     #service
 }
 
