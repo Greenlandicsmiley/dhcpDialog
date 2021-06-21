@@ -17,9 +17,12 @@ Bash version requirement currently unknown.
 Download the latest release
 - https://github.com/Greenlandicsmiley/dhcpDialog/releases/latest
 
-Run `make install` inside the script directory to install the script.
+To install the script
+- Make configure executable
+- Run `./configure`
+- Run `make install` inside the script directory to install the script.
 
-**NOTE:** You may have to run this as root.
+**NOTE:** You may have to run `make install` as root.
 
 ## Why would anyone need/use this?
 
