@@ -226,7 +226,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
             menuItems+="${optionKeytoName[$key]} $(grep "$key " $currentScope | cut -d" " -f7-20 | sed "s_;__g" | sed "s_ _\__g") "
         fi
     done
-    menuItems+="Exclude_an_IP . "
+    menuItems+="Manage_excluded_IPs . "
     if ! $(grep -q "X" "$exclusionsFolder/s$subnet.n$netmask"); then #Reason for just X and not including Z (end of a scope): I am assuming Z is already included with X
         menuItems+="Set_scope_range . "
     else
@@ -326,13 +326,38 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
             editMenuMode
         fi
     ;;
-    "Exclude_an_IP")
+    "Manage_excluded_IPs")
         exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
         if $(grep -q "X:" $exclusionsFile) && $(grep -q "Z:" $exclusionsFile); then #Checks if a scope range has been set
             exec 3>&1
-            excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
+            excludeOrView=$(dialog --menu "Manage exclusion list" 0 0 0 "1" "Exclude an IP" "2" "View or edit the list" 2>&1 1>&3)
             exec 3>&-
-            exclusionAdd $excluding #Adds an IP to be excluded in the scopes
+            if [[ $excludeOrView == "1" ]]; then
+                exec 3>&1
+                excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
+                exec 3>&-
+                exclusionAdd $excluding #Adds an IP to be excluded in the scopes
+            else
+                exclusionList=""
+                for ip in $(grep "Y:" $exclusionsFile | tr -d "Y:"); do
+                    exclusionList+="$IP . off"
+                done
+                exec 3>&1
+                removeIPList=($(dialog --checklist "View or remove IPs from exclusion" 0 0 0 $exclusionList 2>&1 1>&3))
+                exec 3>&-
+                if ! [[ -z $deleteIPList ]]; then
+                    exec 3>&1
+                    removeIPYN=$(dialog --yesno "Are you sure you wantt to remove these IPs from exlcusion?: ${removeIPList[*]}" 0 0 2>&1 1>&3)
+                    removeIPYN=$?
+                    exec 3>&-
+                fi
+                if [[ $removeIPYN == "0" ]]; then
+                    for IP in ${removeIPList[*]}; do #Deletes all files that are selected in the checklist box
+                        sed -i "/${IP}/d" $exclusionsFile
+                    done
+                fi
+                scopeGenerate
+            fi
         else
             dialog --msgbox "Please set a scope range first" 0 0
         fi
