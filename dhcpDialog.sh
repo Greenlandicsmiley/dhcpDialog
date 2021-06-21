@@ -123,7 +123,7 @@ dialogMainMenu() {
                     dialog --menu "Example: the menu buttons do nothing" 0 0 0 $menuItems
                 fi
             fi
-            ;;
+        ;;
         2)
             exec 3>&1
             networkResult=$(dialog --inputbox "Which network do you want to add? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
@@ -135,7 +135,7 @@ dialogMainMenu() {
                 echo -e "subnet $subnet netmask $netmask{\n}" > $currentScope #Places the subnet and netmask info into the file
                 dialogEditMenu
             fi
-            ;;
+        ;;
         3)
             if ! [[ -z $(dir $scopeFolder) ]]; then
                 fileNumber=1 #Sets the file number to 1 to populate the dialog msgbox
@@ -164,7 +164,7 @@ dialogMainMenu() {
             else
                 dialog --msgbox "There are no dhcp scopes!" 0 0
             fi
-            ;;
+        ;;
         4)
             echo "" > $activeLeasesFile #Clear the active leases file
             leasesDump=$(grep -n "lease.*{\|}" $leasesFile | sed "s_lease __" | sed "s_ {__") #Create a dump of all the logged leases in /var/lib/dhcp/dhcpd.leases
@@ -194,13 +194,13 @@ dialogMainMenu() {
                 fi
             done
             dialog --msgbox "$(sed -n "${startLine},${endLine}p" $activeLeasesFile)" 0 0 #Display the selected lease
-            ;;
+        ;;
         5)
             dialog --textbox $ABOUT 0 0 #Copyright notice and author contact information
-            ;;
+        ;;
         6)
             dialog --textbox $LICENSE 0 0 #Copy of GPL3.0 license
-            ;;
+        ;;
         esac
     done
 }
@@ -236,7 +236,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "Router(s)")
         optionName="Router(s)"
         optionCode="routers"
@@ -246,7 +246,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "DNS_server(s)")
         optionName="DNS servers"
         optionCode="domain-name-servers"
@@ -256,7 +256,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "Domain_name")
         optionName="Domain name"
         optionCode="domain-name"
@@ -266,7 +266,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "Broadcast_address")
         optionName="Broadcast address"
         optionCode="broadcast-address"
@@ -275,7 +275,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "Static_route(s)")
         optionName="Static route(s)"
         optionCode="static-routes"
@@ -285,7 +285,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "NTP_server(s)")
         optionName="NTP server(s)"
         optionCode="ntp-servers"
@@ -295,7 +295,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "TFTP_server_name")
         optionName="TFTP server"
         optionCode="tftp-server-name"
@@ -305,7 +305,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "Bootfile_name")
         optionName="Boot file name"
         optionCode="bootfile-name"
@@ -315,7 +315,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             editMenuMode
         fi
-        ;;
+    ;;
     "Exclude_an_IP")
         exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
         if $(grep -q "X:" $exclusionsFile) && $(grep -q "Z:" $exclusionsFile); then #Checks if a scope range has been set
@@ -326,7 +326,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         else
             dialog --msgbox "Please set a scope range first" 0 0
         fi
-        ;;
+    ;;
     "Set_scope_range"|"Change_scope_range")
         exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
         exec 3>&1
@@ -347,7 +347,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
             fi
             scopeGenerate
         fi
-        ;;
+    ;;
     esac
     serviceRestart
 done
@@ -408,7 +408,7 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
             sed -i "/range/d" $currentScope
             sed -i "/}/d" $currentScope
             rangeStart=$(echo "$IP" | cut -d":" -f2) #Sets the starting range
-            ;;
+        ;;
         Y:*)
             if [[ $rangeStart == $(echo $IP | cut -d":" -f2) ]]; then #Checks if the IP being processed is excluded and adds 1 to not include it in ranges
                 ipAddition
@@ -419,7 +419,7 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
                 rangeStart=$(echo "$IP" | cut -d":" -f2) #Sets the starting range for the next excluded IP/end of scope and adds it by one
                 ipAddition
             fi
-            ;;
+        ;;
         Z:*)
             rangeEnd=$(echo "$IP" | cut -d":" -f2) #Sets the ending range
             printf -v ip1 "%03d" $(echo $rangeStart | cut -d"." -f1) #Workaround for bug when setting a scope range like 10.1.0.5 10.1.0.15 where the script thinks 10.1.0.5 is bigger than 10.1.0.15
@@ -435,7 +435,7 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
             if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == $rangeEnd2 ]]; then #Checks if the starting less than or equal to the ending range
                 echo -e "    range $rangeStart $rangeEnd;\n}" >> $currentScope #Adds the range to the end of the scope file along with a }
             fi
-            ;;
+        ;;
         esac
     done
     serviceRestart
