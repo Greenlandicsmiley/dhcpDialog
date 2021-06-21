@@ -4,7 +4,7 @@ OS=$(hostnamectl | grep "Operating System" | cut -d":" -f2)
 
 case $OS in
     *"Arch Linux"*)
-        sed -i "/#service/s_#service_systemctl restart dhcpd_" dhcpDialog.sh
+        sed -i "/#service/s_#service_systemctl restart dhcpd4_" dhcpDialog.sh
         sed -i "/leasesFileRelace/s_leasesFileRelace_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *"Debian"*)
