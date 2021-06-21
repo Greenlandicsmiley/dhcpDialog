@@ -2,11 +2,6 @@
 
 dialog --msgbox "DEVELOPMENT ONLY" 0 0
 
-serviceRestartTrue=0
-if [[ $serviceRestartTrue -eq 0 ]]; then
-    dialog --msgbox "Please insert a service restart command on line 25 and set the serviceRestartTrue to 1 on line 3 in the script itself. If you are not the person who set this up, contact the person who set this up." 0 0
-fi
-
 #File paths
 optFolder=/opt/dhcpDialog
 confFile=/opt/dhcpDialog/dhcpDialog.conf
