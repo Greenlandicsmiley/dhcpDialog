@@ -5,23 +5,23 @@ OS=$(hostnamectl | grep "Operating System" | cut -d":" -f2)
 case $OS in
     *"Arch Linux"*)
         sed -i "/#service/s_#service_systemctl restart dhcpd_" dhcpDialog.sh
-        sed -i "/leasesFile/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
+        sed -i "/leasesFileRelace/s_leasesFileRelace_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *"Debian"*)
         sed -i "/#service/s_#service_service isc-dhcp-server restart_" dhcpDialog.sh
-        sed -i "/leasesFile/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
+        sed -i "/leasesFileRelace/s_leasesFileRelace_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *"Ubuntu"*)
         sed -i "/#service/s_#service_systemctl restart isc-dhcp-server_" dhcpDialog.sh
-        sed -i "/leasesFile/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
+        sed -i "/leasesFileRelace/s_leasesFileRelace_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *"CentOS"*)
         sed -i "/#service/s_#service_systemctl restart dhcpd_" dhcpDialog.sh
-        sed -i "/leasesFile/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
+        sed -i "/leasesFileRelace/s_leasesFileRelace_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
     *)
         echo "Unknown operating system! Please find out how to restart the dhcp server and replace line $(grep -n "#service" dhcpDialog.sh)!"
         echo "If you want this operating system supported, then please consult the contribution manual."
-        sed -i "/leasesFile/s_path_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
+        sed -i "/leasesFileRelace/s_leasesFileRelace_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
 esac
