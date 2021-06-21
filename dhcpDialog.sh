@@ -454,4 +454,9 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
     serviceRestart
 }
 
-dialogMainMenu
+if [[ $1 == "--uninstall" ]]; then
+    rm -rf /opt/dhcpDialog
+    rm /usr/bin/dhcpDialog
+else
+    dialogMainMenu
+fi
