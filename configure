@@ -25,3 +25,6 @@ case $OS in
         sed -i "/leasesFileRelace/s_leasesFileRelace_/var/lib/dhcpd/dhcpd.leases_" dhcpDialog.sh
         ;;
 esac
+
+touch dhcpd.conf
+touch active.leases
