@@ -15,7 +15,7 @@ leasesFile="leasesFileReplace"
 activeLeasesFile="$optFolder/active.leases"
 serversFile="$optFolder/servers.list"
 
-VERSION="122"
+VERSION="200"
 
 #Arrays
 hashKeys=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
