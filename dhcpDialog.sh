@@ -113,10 +113,8 @@ dialogMainMenu() {
             currentScope="$scopeFolder/$editChooseScope"
             if ! [[ -z $editChooseScope || $editChooseScope == "Cancel" ]]; then
                 if [[ $editChooseScope != "example" ]]; then
-                    subnet=${editChooseScope%.*.*.*.*}
-                    netmask=${editChooseScope#*.*.*.*.}
-                    subnet=${subnet/s/}
-                    netmask=${netmask/n/}
+                    subnet=$(echo $editChooseScope | cut -d"." -f1-4 | sed "s_s__g")
+                    netmask=$(echo $editChooseScope | cut -d"." -f5-8 | sed "s_n__g")
                     dialogEditMenu
                 else
                     menuItems=""
