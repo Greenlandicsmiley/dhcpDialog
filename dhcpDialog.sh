@@ -150,7 +150,7 @@ dialogMainMenu() {
                 exec 3>&-
                 if ! [[ -z $scopeDelete ]]; then
                     exec 3>&1
-                    scopeDeleteYN=($(dialog --yesno "Are you sure you want to delete these scopes?: ${scopeDelete[*]}" 0 0 2>&1 1>&3))
+                    scopeDeleteYN=$(dialog --yesno "Are you sure you want to delete these scopes?: ${scopeDelete[*]}" 0 0 2>&1 1>&3)
                     scopeDeleteYN=$?
                     exec 3>&-
                 fi
