@@ -112,9 +112,11 @@ dialogMainMenu() {
             exec 3>&-
             currentScope="$scopeFolder/$editChooseScope"
             if ! [[ -z $editChooseScope || $editChooseScope == "Cancel" ]]; then
-                if ! [[ $editChooseScope == "example" ]]; then
-                    subnet=$(echo $editChooseScope | cut -d"." -f1-4 | sed "s_s__g")
-                    netmask=$(echo $editChooseScope | cut -d"." -f5-8 | sed "s_n__g")
+                if [[ $editChooseScope != "example" ]]; then
+                    subnet=${editChooseScope%.*.*.*.*}
+                    netmask=${editChooseScope#*.*.*.*.}
+                    subnet=${subnet/s/}
+                    netmask=${netmask/n/}
                     dialogEditMenu
                 else
                     menuItems=""
@@ -136,9 +138,9 @@ dialogMainMenu() {
             exec 3>&1
             networkResult=$(dialog --inputbox "Which network do you want to add? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
             exec 3>&-
-            if ! [[ -z $networkResult ]];then #Checks if the input is empty
-                subnet=$(echo $networkResult | cut -d" " -f1) #Sets the current subnet to what the user put in
-                netmask=$(echo $networkResult | cut -d" " -f2) #Sets the current netmask to what the user put in
+            if ! [[ -z $networkResult ]]; then #Checks if the input is empty
+                subnet=${$networkResult% *} #Gets the first value of the input
+                netmask=${$networkResult#* } #Gets the second value of the input
                 currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
                 echo -e "subnet $subnet netmask $netmask{\n}" > $currentScope #Places the subnet and netmask info into the file
                 touch "$exclusionsFolder/s$subnet.n$netmask"
