@@ -3,8 +3,8 @@
 dialog --msgbox "DEVELOPMENT ONLY" 0 0
 
 #File paths
-optFolder=/opt/dhcpDialog
-confFile=/opt/dhcpDialog/dhcpDialog.conf
+optFolder="/opt/dhcpDialog"
+confFile="$optFolder/dhcpDialog.conf"
 
 scopeFolder="$(grep "scopeFolder" $confFile | cut -d":" -f2)"
 exclusionsFolder="$(grep "exclusionsFolder" $confFile | cut -d":" -f2)"
