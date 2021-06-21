@@ -12,8 +12,6 @@ Coreutils, Bash, Dialog, ISC dhcp server not necessarily needed.
 
 Bash version requirement currently unknown.
 
-## Manual intervention:
-
 ## Installation
 
 Download the latest release
