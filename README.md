@@ -4,11 +4,13 @@
 <img src="https://img.shields.io/github/languages/top/Greenlandicsmiley/dhcpDialog?color=Green&style=flat-square">
 <img src="https://img.shields.io/github/last-commit/Greenlandicsmiley/dhcpDialog/main?color=Green&style=flat-square"> 
 
-Bash script for managing (IPv4) ISC dhcp server scopes with Dialog as an interface.
+An isc dhcp server scope management utility written in Bash using Dialog as an interface.
 
 ## Requirements:
 
 Coreutils, Bash, Dialog, ISC dhcp server not necessarily needed.
+
+Bash version requirement currently unknown.
 
 ## Manual intervention:
 
