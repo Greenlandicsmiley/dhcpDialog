@@ -111,7 +111,7 @@ dialogMainMenu() {
                     dialogEditMenu
                 else
                     menuItems=""
-                    for key in ${hashKeys[@]}; do #Iterates through hashKeys and adds menu items using associative/hash arrays according to the keys
+                    for key in "${hashKeys[@]}"; do #Iterates through hashKeys and adds menu items using associative/hash arrays according to the keys
                         if ! $(grep -q "$key " $currentScope); then
                             menuItems+="${optionKeytoName[$key]} . "
                         else
@@ -210,7 +210,7 @@ dialogEditMenu() {
 menuResult="." #To avoid soft lock of next line, sometimes it can result in a "back" or "" (empty) which means it wonuldn't run the function
 while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     menuItems=""
-    for key in ${hashKeys[@]}; do #Iterates through hashKeys and adds menu items using associative/hash arrays according to the keys
+    for key in "${hashKeys[@]}"; do #Iterates through hashKeys and adds menu items using associative/hash arrays according to the keys
         if ! $(grep -q "$key " $currentScope); then
             menuItems+="${optionKeytoName[$key]} . "
         else
