@@ -1,7 +1,7 @@
 ##Put your servers here
 
 
-##Local example (If you are running this script on a server acting as a master for other servers):
+##Local example (If you are running this script on a server acting as a master for other servers, or on a server controlling its own scopes):
 ##10.1.0.10 local
 
 
