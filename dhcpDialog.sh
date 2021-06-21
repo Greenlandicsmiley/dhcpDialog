@@ -11,7 +11,7 @@ dhcpdConfFile="$optFolder/dhcpd.conf"
 LICENSE="$optFolder/LICENSE"
 ABOUT="$optFolder/ABOUT"
 leasesFile="path"
-activeLeasesFile="$optFolder/latest.leases"
+activeLeasesFile="$optFolder/active.leases"
 serversFile="$optFolder/servers.list"
 
 #Arrays
