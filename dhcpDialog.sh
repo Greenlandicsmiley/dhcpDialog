@@ -89,7 +89,8 @@ dialogMainMenu() {
         3 "Delete scope(s)" \
         4 "View leases" \
         5 "About" \
-        6 "View the entire license" \
+        6 "Contribution" \
+        7 "View the entire license" \
         "Exit" "" 2>&1 1>&3)
         exec 3>&-
         case $mainMenuResult in
@@ -199,6 +200,9 @@ dialogMainMenu() {
             dialog --textbox $ABOUT 0 0 #Copyright notice and author contact information
         ;;
         6)
+            dialog --textbox $CONTRIBUTION 0 0 #Copy of contribution rules
+        ;;
+        7)
             dialog --textbox $LICENSE 0 0 #Copy of GPL3.0 license
         ;;
         esac
