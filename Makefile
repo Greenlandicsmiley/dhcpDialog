@@ -3,6 +3,8 @@ BINDIR ?= /usr/bin
 
 all:
 	@echo "Run \"make install\" to install dhcpDialog"
+	@echo "Run \"make update\" to update the existing dhcpDialog"
+	@echo "Run \"make uninstall\" to uninstall dhcpDialog"
 
 install:
 	@mkdir -p $(DESTDIR)$(BINDIR)
