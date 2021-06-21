@@ -4,7 +4,7 @@
 <img src="https://img.shields.io/github/languages/top/Greenlandicsmiley/dhcpDialog?color=Green&style=flat-square">
 <img src="https://img.shields.io/github/last-commit/Greenlandicsmiley/dhcpDialog/main?color=Green&style=flat-square"> 
 
-An isc dhcp server scope management utility written in Bash using Dialog as an interface.
+An interactive isc dhcp server scope management utility written in Bash using Dialog as an interface.
 
 ## Requirements:
 
