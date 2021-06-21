@@ -135,6 +135,7 @@ dialogMainMenu() {
                 netmask=$(echo $networkResult | cut -d" " -f2) #Sets the current netmask to what the user put in
                 currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
                 echo -e "subnet $subnet netmask $netmask{\n}" > $currentScope #Places the subnet and netmask info into the file
+                touch "$exclusionsFolder/s$subnet.n$netmask"
                 dialogEditMenu
             fi
         ;;
