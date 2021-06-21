@@ -18,7 +18,7 @@ Download the latest release
 - https://github.com/Greenlandicsmiley/dhcpDialog/releases/latest
 
 To install the script
-- Make configure executable
+- Make `configure` executable
 - Run `./configure`
 - Run `make install` inside the script directory to install the script.
 
