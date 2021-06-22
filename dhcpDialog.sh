@@ -137,8 +137,8 @@ dialogMainMenu() {
             networkResult=$(dialog --inputbox "Which network do you want to add? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
             exec 3>&-
             if ! [[ -z $networkResult ]]; then #Checks if the input is empty
-                subnet=${$networkResult% *} #Gets the first value of the input
-                netmask=${$networkResult#* } #Gets the second value of the input
+                subnet=${networkResult% *} #Gets the first value of the input
+                netmask=${networkResult#* } #Gets the second value of the input
                 currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
                 echo -e "subnet $subnet netmask $netmask{\n}" > $currentScope #Places the subnet and netmask info into the file
                 touch "$exclusionsFolder/s$subnet.n$netmask"
