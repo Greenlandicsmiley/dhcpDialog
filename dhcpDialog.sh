@@ -410,8 +410,11 @@ editMenuMode() {
     optionEditMode=$(dialog --menu "What do you want to do?" 0 0 0 $optionEditModeMenuItems 2>&1 1>&3)
     exec 3>&-
     if [[ $optionEditMode == "1" ]]; then
+        inputInit="$(grep "$optionCode " $currentScope | tr -s " ")"
+        inputInit="${inputInit#* * }"
+        inputInit="${inputInit//;}"
         exec 3>&1
-        optionEditInput=$(dialog --inputbox "Edit $(echo $optionName | tr '[:upper:]' '[:lower:]')" 0 0 "$(grep "$optionCode " $currentScope | cut -d" " -f7-20 | sed "s_;__g")" 2>&1 1>&3)
+        optionEditInput=$(dialog --inputbox "Edit ${optionName,,}" 0 0 "$inputInit" 2>&1 1>&3)
         exec 3>&-
         sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionEditInput};_" $currentScope
     elif [[ $optionEditMode == "2" && $optionMode == "multi" ]]; then
