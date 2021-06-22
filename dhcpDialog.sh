@@ -70,7 +70,7 @@ dialogInputbox() {
     optionResult=$(dialog --inputbox "$optionName" 0 0 2>&1 1>&3) #An input box to get user input for the chosen option
     exec 3>&-
     if ! [[ -z $optionResult ]]; then
-        if $(grep -q "$optionCode " $currentScope); then #Checks if the option already exists in the scope file
+        if grep -q "$optionCode " $currentScope; then #Checks if the option already exists in the scope file
             if [[ $optionMode == "multi" ]]; then #Checks if the option can have multiple values.
                 sed -i "/${optionCode} /s_;_, ${optionResult};_" $currentScope #Replaces the existing semicolon with the desired value and adds a semicolon
             elif [[ $optionMode == "quotes" ]]; then
@@ -121,7 +121,7 @@ dialogMainMenu() {
                 else
                     menuItems=""
                     for key in "${hashKeys[@]}"; do #Iterates through hashKeys and adds menu items using associative/hash arrays according to the keys
-                        if ! $(grep -q "$key " $currentScope); then
+                        if ! grep -q "$key " $currentScope; then
                             menuItems+="${optionKeytoName[$key]} . "
                         else
                             menuItems+="${optionKeytoName[$key]} $(grep "$key " $currentScope | cut -d" " -f7-20 | sed "s_;__g" | sed "s_ _\__g") "
@@ -232,14 +232,14 @@ menuResult="." #To avoid soft lock of next line, sometimes it can result in a "b
 while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     menuItems=""
     for key in "${hashKeys[@]}"; do #Iterates through hashKeys and adds menu items using associative/hash arrays according to the keys
-        if ! $(grep -q "$key " $currentScope); then
+        if ! grep -q "$key " $currentScope; then
             menuItems+="${optionKeytoName[$key]} . "
         else
             menuItems+="${optionKeytoName[$key]} $(grep "$key " $currentScope | cut -d" " -f7-20 | sed "s_;__g" | sed "s_ _\__g") "
         fi
     done
     menuItems+="Manage_excluded_IPs . "
-    if ! $(grep -q "X" "$exclusionsFolder/s$subnet.n$netmask"); then #Reason for just X and not including Z (end of a scope): I am assuming Z is already included with X
+    if ! grep -q "X" "$exclusionsFolder/s$subnet.n$netmask"; then #Reason for just X and not including Z (end of a scope): I am assuming Z is already included with X
         menuItems+="Set_scope_range . "
     else
         startValue="$(grep "X:" "$exclusionsFolder/s$subnet.n$netmask")"
@@ -255,7 +255,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     "Subnet_mask")
         optionName="Subnet mask"
         optionCode="subnet-mask"
-        if ! $(grep -q "subnet-mask" $currentScope); then
+        if ! grep -q "subnet-mask" $currentScope; then
             dialogInputbox
         else
             editMenuMode
@@ -265,7 +265,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         optionName="Router(s)"
         optionCode="routers"
         optionMode="multi"
-        if ! $(grep -q "routers" $currentScope); then
+        if ! grep -q "routers" $currentScope; then
             dialogInputbox
         else
             editMenuMode
@@ -275,7 +275,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         optionName="DNS servers"
         optionCode="domain-name-servers"
         optionMode="multi"
-        if ! $(grep -q "domain-name-servers" $currentScope); then
+        if ! grep -q "domain-name-servers" $currentScope; then
             dialogInputbox
         else
             editMenuMode
@@ -285,7 +285,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         optionName="Domain name"
         optionCode="domain-name"
         optionMode="quotes"
-        if ! $(grep -q "domain-name " $currentScope); then
+        if ! grep -q "domain-name " $currentScope; then
             dialogInputbox
         else
             editMenuMode
@@ -294,7 +294,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     "Broadcast_address")
         optionName="Broadcast address"
         optionCode="broadcast-address"
-        if ! $(grep -q "broadcast-address" $currentScope); then 
+        if ! grep -q "broadcast-address" $currentScope; then 
             dialogInputbox
         else
             editMenuMode
@@ -304,7 +304,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         optionName="Static route(s)"
         optionCode="static-routes"
         optionMode="multi"
-        if ! $(grep -q "static-routes" $currentScope); then
+        if ! grep -q "static-routes" $currentScope; then
             dialogInputbox
         else
             editMenuMode
@@ -314,7 +314,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         optionName="NTP server(s)"
         optionCode="ntp-servers"
         optionMode="multi"
-        if ! $(grep -q "ntp-servers" $currentScope); then
+        if ! grep -q "ntp-servers" $currentScope; then
             dialogInputbox
         else
             editMenuMode
@@ -324,7 +324,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         optionName="TFTP server"
         optionCode="tftp-server-name"
         optionMode="quotes"
-        if ! $(grep -q "tftp-server-name" $currentScope); then
+        if ! grep -q "tftp-server-name" $currentScope; then
             dialogInputbox
         else
             editMenuMode
@@ -334,7 +334,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         optionName="Boot file name"
         optionCode="bootfile-name"
         optionMode="quotes"
-        if ! $(grep -q "bootfile-name" $currentScope); then
+        if ! grep -q "bootfile-name" $currentScope; then
             dialogInputbox
         else
             editMenuMode
@@ -342,7 +342,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     ;;
     "Manage_excluded_IPs")
         exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
-        if $(grep -q "X:" $exclusionsFile) && $(grep -q "Z:" $exclusionsFile); then #Checks if a scope range has been set
+        if grep -q "X:" $exclusionsFile && grep -q "Z:" $exclusionsFile; then #Checks if a scope range has been set
             exec 3>&1
             excludeOrView=$(dialog --menu "Manage exclusion list" 0 0 0 "1" "Exclude an IP" "2" "View or edit the list" 2>&1 1>&3)
             exec 3>&-
@@ -352,7 +352,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
                 exec 3>&-
                 exclusionAdd $excluding #Adds an IP to be excluded in the scopes
             else
-                if $(grep -q "Y:" $exclusionsFile); then
+                if grep -q "Y:" $exclusionsFile; then
                     exclusionList=""
                     for IP in $(grep "Y:" $exclusionsFile | tr -d "Y:"); do
                         exclusionList+="$IP . off"
@@ -384,13 +384,13 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         scopeRange=$(dialog --inputbox "What range do you want? Example: 192.168.1.1 192.168.1.255. Leave empty to delete." 0 0 2>&1 1>&3)
         exec 3>&-
         if ! [[ -z $scopeRange ]]; then
-            if $(grep -q "X:" $exclusionsFile); then #Checks if the user has already added a scope range
+            if grep -q "X:" $exclusionsFile; then #Checks if the user has already added a scope range
                 replaceLine=${scopeRange% *} #Sets the variable to the first IP the user has put in the input box
                 sed -i "/X/s|.*|X:${replaceLine}|" $exclusionsFile #Replaces the entire line with the desired scope range start
             else
                 echo "X:${scopeRange% *}" >> $exclusionsFile #Puts the first IP the user has put in the input box at the end of the exclusions file
             fi
-            if $(grep -q "Z:" $exclusionsFile); then #Same with previous
+            if grep -q "Z:" $exclusionsFile; then #Same with previous
                 replaceLine=${scopeRange#* }
                 sed -i "/Z/s_.*_Z:${replaceLine}_" $exclusionsFile
             else
@@ -436,7 +436,7 @@ editMenuMode() {
 
 exclusionAdd() {
     exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
-    if $(grep -q $1 $exclusionsFile); then #Checks if the IP is already excluded
+    if grep -q "$1" $exclusionsFile; then #Checks if the IP is already excluded
         dialog --msgbox "That IP is already excluded!" 0 0
     else
         if [[ $(echo $1 | cut -d"." -f1) -gt 255 || $(echo $1 | cut -d"." -f2) -gt 255 || $(echo $1 | cut -d"." -f3) -gt 255 || $(echo $1 | cut -d"." -f4) -gt 255 ]]; then #Checks if the IP is valid
