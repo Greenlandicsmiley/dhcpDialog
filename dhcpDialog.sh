@@ -22,8 +22,10 @@ hashKeys=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast
 
 declare -A optionKeytoName
 optionKeytoName=(["subnet-mask"]="Subnet_mask" ["routers"]="Router(s)" ["domain-name-servers"]="DNS_server(s)" ["domain-name"]="Domain_name" ["broadcast-address"]="Broadcast_address" ["static-routes"]="Static_route(s)" ["ntp-servers"]="NTP_server(s)" ["tftp-server-name"]="TFTP_server(s)" ["bootfile-name"]="Boot_file_name")
+declare -A optionNametoKey
+optionNametoKey=(["Subnet_mask"]="subnet-mask" ["Router(s)"]="routers" ["DNS_server(s)"]="domain-name-servers" ["Domain_name"]="domain-name" ["Broadcast_address"]="broadcast-address" ["Static_route(s)"]="static-routes" ["NTP_server(s)"]="ntp-servers" ["TFTP_server(s)"]="tftp-server-name" ["Boot_file_name"]="bootfile-name")
 
-#Functions
+#Non-menu functions go here
 serviceRestart() {
     scopeDirCount=($(ls $scopeFolder/s*))
     exclusionsDirCount=($(ls $exclusionsFolder/s*))
@@ -67,28 +69,76 @@ ipSubtraction() {
     fi
 }
 
-dialogInputbox() {
-    exec 3>&1
-    optionResult=$(dialog --inputbox "$optionName" 0 0 2>&1 1>&3) #An input box to get user input for the chosen option
-    exec 3>&-
-    if ! [[ -z $optionResult ]]; then
-        if grep -q "$optionCode " $currentScope; then #Checks if the option already exists in the scope file
-            if [[ $optionMode == "multi" ]]; then #Checks if the option can have multiple values.
-                sed -i "/${optionCode} /s_;_, ${optionResult};_" $currentScope #Replaces the existing semicolon with the desired value and adds a semicolon
-            elif [[ $optionMode == "quotes" ]]; then
-                sed -i "/${optionCode} /s_.*_    option ${optionCode} \"${optionResult}\";_" $currentScope
-            else
-                sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionResult};_" $currentScope #Replaces the entire line with the desired value
-            fi
-        elif [[ $optionMode == "quotes" ]]; then
-            sed -i "/}/s_.*_    option ${optionCode} \"${optionResult}\";\n}_" $currentScope
-        else
-            sed -i "/}/s_.*_    option ${optionCode} ${optionResult};\n}_" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
-        fi
-        serviceRestart
+inputBoxOrEditMode() {
+    if ! grep -q "$1" "$currentScope"; then
+        dialogInputbox
+    else
+        editMenuMode
     fi
 }
 
+exclusionAdd() {
+    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
+    if grep -q "$1" $exclusionsFile; then #Checks if the IP is already excluded
+        dialog --msgbox "That IP is already excluded!" 0 0
+    else
+        if [[ $(echo $1 | cut -d"." -f1) -gt 255 || $(echo $1 | cut -d"." -f2) -gt 255 || $(echo $1 | cut -d"." -f3) -gt 255 || $(echo $1 | cut -d"." -f4) -gt 255 ]]; then #Checks if the IP is valid
+            dialog --msgbox "$1 is invalid!!" 0 0
+        elif [[ $(echo $1 | cut -d"." -f1) -lt 0 || $(echo $1 | cut -d"." -f2) -lt 0 || $(echo $1 | cut -d"." -f3) -lt 0 || $(echo $1 | cut -d"." -f4) -lt 0 ]]; then #Checks if the iP is valid
+            dialog --msgbox "$1 is invalid!" 0 0 
+        else
+            echo "Y:$1" >> $exclusionsFile #Puts excluded IP at the end of the file
+            scopeGenerate
+        fi
+    fi
+}
+
+scopeGenerate() { #This function generates scope ranges according to excluded IPs in the exclusions file
+    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
+    currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
+    sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o $exclusionsFile $exclusionsFile #Sorts the exclusions file and outputs it to the exclusions file to not confuse the generator
+    sed -i "/X/,/Z/!d" $exclusionsFile #Removes IPs that are outside the scope
+    sed -i "s_ _\n_g" $exclusionsFile #Replaces spaces with newline
+    for IP in $(cat $exclusionsFile); do
+        case $IP in
+        X:*) #Checks if the current IP being processed is starting range
+            sed -i "/range/d" $currentScope
+            sed -i "/}/d" $currentScope
+            rangeStart=${IP#*:} #Sets the starting range
+        ;;
+        Y:*)
+            if [[ $rangeStart == "${IP#*:}" ]]; then #Checks if the IP being processed is excluded and adds 1 to not include it in ranges
+                ipAddition
+            else
+                rangeEnd=${IP#*:} #Sets the ending range and subtracts by one to not include the excluded IP
+                ipSubtraction
+                echo "    range $rangeStart $rangeEnd;" >> $currentScope #Adds a range to the end of the scope file
+                rangeStart=${$IP#*:} #Sets the starting range for the next excluded IP/end of scope and adds it by one
+                ipAddition
+            fi
+        ;;
+        Z:*)
+            rangeEnd=$(echo "$IP" | cut -d":" -f2) #Sets the ending range
+            printf -v ip1 "%03d" $(echo $rangeStart | cut -d"." -f1) #Workaround for bug when setting a scope range like 10.1.0.5 10.1.0.15 where the script thinks 10.1.0.5 is bigger than 10.1.0.15
+            printf -v ip2 "%03d" $(echo $rangeStart | cut -d"." -f2)
+            printf -v ip3 "%03d" $(echo $rangeStart | cut -d"." -f3)
+            printf -v ip4 "%03d" $(echo $rangeStart | cut -d"." -f4)
+            rangeStart2="$ip1$ip2$ip3$ip4"
+            printf -v ip5 "%03d" $(echo $rangeEnd | cut -d"." -f1)
+            printf -v ip6 "%03d" $(echo $rangeEnd | cut -d"." -f2)
+            printf -v ip7 "%03d" $(echo $rangeEnd | cut -d"." -f3)
+            printf -v ip8 "%03d" $(echo $rangeEnd | cut -d"." -f4)
+            rangeEnd2="$ip5$ip6$ip7$ip8" #End of workaround
+            if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == "$rangeEnd2" ]]; then #Checks if the starting less than or equal to the ending range
+                echo -e "    range $rangeStart $rangeEnd;\n}" >> $currentScope #Adds the range to the end of the scope file along with a }
+            fi
+        ;;
+        esac
+    done
+    serviceRestart
+}
+
+#Menu functions go under here
 dialogMainMenu() {
     while [[ $mainMenuResult != "Exit" ]]; do
         exec 3>&1
@@ -254,93 +304,22 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     exec 3>&-
     optionMode="" #To avoid some options having unwanted option modes like subnet-mask being a multi option or a quotes option
     case $menuResult in
-    "Subnet_mask")
-        optionName="Subnet mask"
-        optionCode="subnet-mask"
-        if ! grep -q "subnet-mask" $currentScope; then
-            dialogInputbox
-        else
-            editMenuMode
-        fi
+    "Subnet_mask"|"Broadcast_address")
+        optionName="${menuResult//_/ }"
+        optionCode="${optionNameToKey[$menuResult]}"
+        inputBoxOrEditMode "$optionCode"
     ;;
-    "Router(s)")
-        optionName="Router(s)"
-        optionCode="routers"
+    "Router(s)"|"DNS_server(s)"|"Static_route(s)"|"NTP_server(s)")
+        optionName="${menuResult//_/ }"
+        optionCode="${optionNameToKey[$menuResult]}"
         optionMode="multi"
-        if ! grep -q "routers" $currentScope; then
-            dialogInputbox
-        else
-            editMenuMode
-        fi
+        inputBoxOrEditMode "$optionCode"
     ;;
-    "DNS_server(s)")
-        optionName="DNS servers"
-        optionCode="domain-name-servers"
-        optionMode="multi"
-        if ! grep -q "domain-name-servers" $currentScope; then
-            dialogInputbox
-        else
-            editMenuMode
-        fi
-    ;;
-    "Domain_name")
-        optionName="Domain name"
-        optionCode="domain-name"
+    "Domain_name"|"TFTP_server_name"|"Bootfile_name")
+        optionName="${menuResult//_/ }"
+        optionCode="${optionNameToKey[$menuResult]}"
         optionMode="quotes"
-        if ! grep -q "domain-name " $currentScope; then
-            dialogInputbox
-        else
-            editMenuMode
-        fi
-    ;;
-    "Broadcast_address")
-        optionName="Broadcast address"
-        optionCode="broadcast-address"
-        if ! grep -q "broadcast-address" $currentScope; then 
-            dialogInputbox
-        else
-            editMenuMode
-        fi
-    ;;
-    "Static_route(s)")
-        optionName="Static route(s)"
-        optionCode="static-routes"
-        optionMode="multi"
-        if ! grep -q "static-routes" $currentScope; then
-            dialogInputbox
-        else
-            editMenuMode
-        fi
-    ;;
-    "NTP_server(s)")
-        optionName="NTP server(s)"
-        optionCode="ntp-servers"
-        optionMode="multi"
-        if ! grep -q "ntp-servers" $currentScope; then
-            dialogInputbox
-        else
-            editMenuMode
-        fi
-    ;;
-    "TFTP_server_name")
-        optionName="TFTP server"
-        optionCode="tftp-server-name"
-        optionMode="quotes"
-        if ! grep -q "tftp-server-name" $currentScope; then
-            dialogInputbox
-        else
-            editMenuMode
-        fi
-    ;;
-    "Bootfile_name")
-        optionName="Boot file name"
-        optionCode="bootfile-name"
-        optionMode="quotes"
-        if ! grep -q "bootfile-name" $currentScope; then
-            dialogInputbox
-        else
-            editMenuMode
-        fi
+        inputBoxOrEditMode "$optionCode"
     ;;
     "Manage_excluded_IPs")
         exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
@@ -409,6 +388,28 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
 done
 }
 
+dialogInputbox() {
+    exec 3>&1
+    optionResult=$(dialog --inputbox "$optionName" 0 0 2>&1 1>&3) #An input box to get user input for the chosen option
+    exec 3>&-
+    if ! [[ -z $optionResult ]]; then
+        if grep -q "$optionCode " $currentScope; then #Checks if the option already exists in the scope file
+            if [[ $optionMode == "multi" ]]; then #Checks if the option can have multiple values.
+                sed -i "/${optionCode} /s_;_, ${optionResult};_" $currentScope #Replaces the existing semicolon with the desired value and adds a semicolon
+            elif [[ $optionMode == "quotes" ]]; then
+                sed -i "/${optionCode} /s_.*_    option ${optionCode} \"${optionResult}\";_" $currentScope
+            else
+                sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionResult};_" $currentScope #Replaces the entire line with the desired value
+            fi
+        elif [[ $optionMode == "quotes" ]]; then
+            sed -i "/}/s_.*_    option ${optionCode} \"${optionResult}\";\n}_" $currentScope
+        else
+            sed -i "/}/s_.*_    option ${optionCode} ${optionResult};\n}_" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
+        fi
+        serviceRestart
+    fi
+}
+
 editMenuMode() {
     if ! [[ $optionMode == "multi" ]]; then
         optionEditModeMenuItems="1 Edit 2 Delete 3 Cancel"
@@ -434,67 +435,6 @@ editMenuMode() {
             sed -i "/${optionCode} /d" $currentScope
         fi
     fi
-}
-
-exclusionAdd() {
-    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
-    if grep -q "$1" $exclusionsFile; then #Checks if the IP is already excluded
-        dialog --msgbox "That IP is already excluded!" 0 0
-    else
-        if [[ $(echo $1 | cut -d"." -f1) -gt 255 || $(echo $1 | cut -d"." -f2) -gt 255 || $(echo $1 | cut -d"." -f3) -gt 255 || $(echo $1 | cut -d"." -f4) -gt 255 ]]; then #Checks if the IP is valid
-            dialog --msgbox "$1 is invalid!!" 0 0
-        elif [[ $(echo $1 | cut -d"." -f1) -lt 0 || $(echo $1 | cut -d"." -f2) -lt 0 || $(echo $1 | cut -d"." -f3) -lt 0 || $(echo $1 | cut -d"." -f4) -lt 0 ]]; then #Checks if the iP is valid
-            dialog --msgbox "$1 is invalid!" 0 0 
-        else
-            echo "Y:$1" >> $exclusionsFile #Puts excluded IP at the end of the file
-            scopeGenerate
-        fi
-    fi
-}
-
-scopeGenerate() { #This function generates scope ranges according to excluded IPs in the exclusions file
-    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
-    currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
-    sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o $exclusionsFile $exclusionsFile #Sorts the exclusions file and outputs it to the exclusions file to not confuse the generator
-    sed -i "/X/,/Z/!d" $exclusionsFile #Removes IPs that are outside the scope
-    sed -i "s_ _\n_g" $exclusionsFile #Replaces spaces with newline
-    for IP in $(cat $exclusionsFile); do
-        case $IP in
-        X:*) #Checks if the current IP being processed is starting range
-            sed -i "/range/d" $currentScope
-            sed -i "/}/d" $currentScope
-            rangeStart=${IP#*:} #Sets the starting range
-        ;;
-        Y:*)
-            if [[ $rangeStart == "${IP#*:}" ]]; then #Checks if the IP being processed is excluded and adds 1 to not include it in ranges
-                ipAddition
-            else
-                rangeEnd=${IP#*:} #Sets the ending range and subtracts by one to not include the excluded IP
-                ipSubtraction
-                echo "    range $rangeStart $rangeEnd;" >> $currentScope #Adds a range to the end of the scope file
-                rangeStart=${$IP#*:} #Sets the starting range for the next excluded IP/end of scope and adds it by one
-                ipAddition
-            fi
-        ;;
-        Z:*)
-            rangeEnd=$(echo "$IP" | cut -d":" -f2) #Sets the ending range
-            printf -v ip1 "%03d" $(echo $rangeStart | cut -d"." -f1) #Workaround for bug when setting a scope range like 10.1.0.5 10.1.0.15 where the script thinks 10.1.0.5 is bigger than 10.1.0.15
-            printf -v ip2 "%03d" $(echo $rangeStart | cut -d"." -f2)
-            printf -v ip3 "%03d" $(echo $rangeStart | cut -d"." -f3)
-            printf -v ip4 "%03d" $(echo $rangeStart | cut -d"." -f4)
-            rangeStart2="$ip1$ip2$ip3$ip4"
-            printf -v ip5 "%03d" $(echo $rangeEnd | cut -d"." -f1)
-            printf -v ip6 "%03d" $(echo $rangeEnd | cut -d"." -f2)
-            printf -v ip7 "%03d" $(echo $rangeEnd | cut -d"." -f3)
-            printf -v ip8 "%03d" $(echo $rangeEnd | cut -d"." -f4)
-            rangeEnd2="$ip5$ip6$ip7$ip8" #End of workaround
-            if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == "$rangeEnd2" ]]; then #Checks if the starting less than or equal to the ending range
-                echo -e "    range $rangeStart $rangeEnd;\n}" >> $currentScope #Adds the range to the end of the scope file along with a }
-            fi
-        ;;
-        esac
-    done
-    serviceRestart
 }
 
 if [[ $1 == "--uninstall" ]]; then
