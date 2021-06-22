@@ -387,14 +387,14 @@ dialogInputbox() {
             if [[ $optionMode == "multi" ]]; then #Checks if the option can have multiple values.
                 sed -i "/${optionCode} /s_;_, ${optionResult};_" $currentScope #Replaces the existing semicolon with the desired value and adds a semicolon
             elif [[ $optionMode == "quotes" ]]; then
-                sed -i "/${optionCode} /s_.*_    option ${optionCode} \"${optionResult}\";_" $currentScope
+                sed -i "/${optionCode} /s_.*_    option ${optionCode} \"${optionResult}\";_" "$currentScope"
             else
-                sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionResult};_" $currentScope #Replaces the entire line with the desired value
+                sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionResult};_" "$currentScope" #Replaces the entire line with the desired value
             fi
         elif [[ $optionMode == "quotes" ]]; then
-            sed -i "/}/s_.*_    option ${optionCode} \"${optionResult}\";\n}_" $currentScope
+            sed -i "/}/s_.*_    option ${optionCode} \"${optionResult}\";\n}_" "$currentScope"
         else
-            sed -i "/}/s_.*_    option ${optionCode} ${optionResult};\n}_" $currentScope #Replaces the entire line with the desired option to be added and adds } at the end of the file
+            sed -i "/}/s_.*_    option ${optionCode} ${optionResult};\n}_" "$currentScope" #Replaces the entire line with the desired option to be added and adds } at the end of the file
         fi
         serviceRestart
     fi
@@ -410,13 +410,13 @@ editMenuMode() {
     optionEditMode=$(dialog --menu "What do you want to do?" 0 0 0 $optionEditModeMenuItems 2>&1 1>&3)
     exec 3>&-
     if [[ $optionEditMode == "1" ]]; then
-        inputInit="$(grep "$optionCode " $currentScope | tr -s " ")"
+        inputInit="$(grep "$optionCode " "$currentScope" | tr -s " ")"
         inputInit="${inputInit#* * }"
         inputInit="${inputInit//;}"
         exec 3>&1
         optionEditInput=$(dialog --inputbox "Edit ${optionName,,}" 0 0 "$inputInit" 2>&1 1>&3)
         exec 3>&-
-        sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionEditInput};_" $currentScope
+        sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionEditInput};_" "$currentScope"
     elif [[ $optionEditMode == "2" && $optionMode == "multi" ]]; then
         dialogInputbox
     elif [[ $optionEditMode == "2" ]] || [[ $optionEditMode == "3" && $optionMode == "multi" ]]; then
@@ -425,7 +425,7 @@ editMenuMode() {
         optionEditInput=$?
         exec 3>&-
         if [[ $optionEditInput -eq "0" ]]; then
-            sed -i "/${optionCode} /d" $currentScope
+            sed -i "/${optionCode} /d" "$currentScope"
         fi
     fi
 }
