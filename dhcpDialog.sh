@@ -1,5 +1,7 @@
 #!/bin/bash
 
+#VERSION:200
+
 dialog --msgbox "DEVELOPMENT ONLY" 0 0
 
 #File paths
@@ -13,9 +15,7 @@ CONTRIBUTION="$optFolder/CONTRIBUTING.md"
 ABOUT="$optFolder/ABOUT"
 leasesFile="leasesFileReplace"
 activeLeasesFile="$optFolder/active.leases"
-serversFile="$optFolder/servers.list"
-
-VERSION="200"
+#serversFile="$optFolder/servers.list" will be activated later
 
 #Arrays
 hashKeys=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
