@@ -29,4 +29,4 @@ esac
 touch dhcpd.conf
 touch active.leases
 
-[[ $(whoami) != "root" ]] && echo "It seems like you are not root. if you plan on running dhcpDialog as not root, then you might have to consider giving $(whoami) access to restart the dhcp server without requiring password."
+[[ $(whoami) != "root" ]] && echo "It seems like you are not root. If you plan on running dhcpDialog as not root, then you might have to consider giving $(whoami) access to restart the dhcp server without requiring password."
