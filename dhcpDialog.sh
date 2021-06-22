@@ -25,7 +25,9 @@ optionKeytoName=(["subnet-mask"]="Subnet_mask" ["routers"]="Router(s)" ["domain-
 
 #Functions
 serviceRestart() {
-    if [[ $(ls $scopeFolder | wc -l) -gt 1 && $(ls $exclusionsFolder | wc -l) -gt 1 ]]; then
+    scopeDirCount=($(ls $scopeFolder/s*))
+    exclusionsDirCount=($(ls $exclusionsFolder/s*))
+    if [[ ${#scopeDirCount[@]} -ge 1 && ${#exclusionsDirCount[@]} -ge 1 ]]; then
         cat $scopeFolder/s*.n* > $dhcpdConfFile
     else
         echo "" > $dhcpdConfFile
@@ -157,7 +159,7 @@ dialogMainMenu() {
                     fileNumber=$(( fileNumber + 1 ))
                 done
                 exec 3>&1
-                scopeDelete=($(dialog --checklist "Delete scope(s) - Press space to select. Do not delete example, serviceRestart() depends on it." 0 0 0 $scopeFiles 2>&1 1>&3))
+                scopeDelete=($(dialog --checklist "Delete scope(s) - Press space to select." 0 0 0 $scopeFiles 2>&1 1>&3))
                 exec 3>&-
                 if ! [[ -z "${scopeDelete[*]}" ]]; then
                     exec 3>&1
