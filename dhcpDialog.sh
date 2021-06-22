@@ -159,7 +159,7 @@ dialogMainMenu() {
                 exec 3>&1
                 scopeDelete=($(dialog --checklist "Delete scope(s) - Press space to select. Do not delete example, serviceRestart() depends on it." 0 0 0 $scopeFiles 2>&1 1>&3))
                 exec 3>&-
-                if ! [[ -z $scopeDelete ]]; then
+                if ! [[ -z "${scopeDelete[@]}" ]]; then
                     exec 3>&1
                     scopeDeleteYN=$(dialog --yesno "Are you sure you want to delete these scopes?: ${scopeDelete[*]}" 0 0 2>&1 1>&3)
                     scopeDeleteYN=$?
@@ -207,7 +207,7 @@ dialogMainMenu() {
             leaseMenu=$(dialog --no-cancel --menu "View active leases" 0 0 0 $leasesMenu 2>&1 1>&3) #Menu for viewing leases inside a dialog menu
             exec 3>&-
             for lease in $leasesDump; do #Go through all leases in the latest.leases file
-                if [[ $(echo $lease | cut -d":" -f2) == $leaseMenu ]]; then
+                if [[ $(echo $lease | cut -d":" -f2) == "$leaseMenu" ]]; then
                     startLine=$(echo $lease | cut -d":" -f1) #Get the starting line number of the lease
                     endLine=$(echo $lease | cut -d":" -f3) #Get the ending line number of the lease
                 fi
@@ -360,7 +360,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
                     exec 3>&1
                     removeIPList=($(dialog --checklist "View or remove IPs from exclusion" 0 0 0 $exclusionList 2>&1 1>&3))
                     exec 3>&-
-                    if ! [[ -z $removeIPList ]]; then
+                    if ! [[ -z "${removeIPList[@]}" ]]; then
                         exec 3>&1
                         removeIPYN=$(dialog --yesno "Are you sure you want to remove these IPs from exlcusion?: ${removeIPList[*]}" 0 0 2>&1 1>&3)
                         removeIPYN=$?
@@ -464,7 +464,7 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
             rangeStart=${IP#*:} #Sets the starting range
         ;;
         Y:*)
-            if [[ $rangeStart == ${IP#*:} ]]; then #Checks if the IP being processed is excluded and adds 1 to not include it in ranges
+            if [[ $rangeStart == "${IP#*:}" ]]; then #Checks if the IP being processed is excluded and adds 1 to not include it in ranges
                 ipAddition
             else
                 rangeEnd=${IP#*:} #Sets the ending range and subtracts by one to not include the excluded IP
@@ -486,7 +486,7 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
             printf -v ip7 "%03d" $(echo $rangeEnd | cut -d"." -f3)
             printf -v ip8 "%03d" $(echo $rangeEnd | cut -d"." -f4)
             rangeEnd2="$ip5$ip6$ip7$ip8" #End of workaround
-            if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == $rangeEnd2 ]]; then #Checks if the starting less than or equal to the ending range
+            if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == "$rangeEnd2" ]]; then #Checks if the starting less than or equal to the ending range
                 echo -e "    range $rangeStart $rangeEnd;\n}" >> $currentScope #Adds the range to the end of the scope file along with a }
             fi
         ;;
