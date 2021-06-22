@@ -37,105 +37,93 @@ serviceRestart() {
     #service
 }
 
-ipAddition() {
-    rangeStart="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(( $(echo $rangeStart | cut -d"." -f4) + 1))" #Adds 1 to last octet of IP, if it results in 256, then it is passed down to 3rd octet. 
-    if [[ $(echo $rangeStart | cut -d"." -f4 ) -ge 256 ]]; then
-        rangeStart="$(echo $rangeStart | cut -d"." -f1-2).$(( $(echo $rangeStart | cut -d"." -f3) + 1)).0"
-    fi
-    if [[ $(echo $rangeStart | cut -d"." -f3 ) -ge 256 ]]; then
-        rangeStart="$(echo $rangeStart | cut -d"." -f1).$(( $(echo $rangeStart | cut -d"." -f2) + 1)).0.$(echo $rangeStart | cut -d"." -f4)"
-    fi
-    if [[ $(echo $rangeStart | cut -d"." -f2 ) -ge 256 ]]; then
-        rangeStart="$(( $(echo $rangeStart | cut -d"." -f1) + 1)).0.$(echo $rangeStart | cut -d"." -f3-4)"
-    fi
-    if [[ $(echo $rangeStart | cut -d"." -f1 ) -ge 256 ]]; then
-        rangeStart="255.$(echo $rangeStart | cut -d"." -f2-4)"
-    fi
+ipAddition() {                                                                                                 #Function for adding IPs by 1
+    rangeStart="${IP#*:}"                                                                                      #Only get IP
+    rangeStart="${rangeStart%.*}.$(( ${rangeStart#*.*.*.} + 1))"                                               #Get 1st 3 octets, add 1 to 4th
+    [[ ${rangeStart#*.*.*.} -ge 256 ]] && \                                                                    #Check if 4th octet is ge to 256
+        rangeStart="${rangeStart%.*.*}.$(( $(echo $rangeStart | cut -d"." -f3) + 1)).0"                        #Get 1st 2 octets, add 1 to 3rd, then set last to 0
+    [[ $(echo $rangeStart | cut -d"." -f3 ) -ge 256 ]] && \                                                    #Check if 3rd octet is ge to 256
+        rangeStart="${rangeStart%.*.*.*}.$(( $(echo $rangeStart | cut -d"." -f2) + 1)).0.${rangeStart#*.*.*.}" #Get 1st octet, add 1 to 2nd, set 3rd to 0, then get 4th
+    [[ $(echo $rangeStart | cut -d"." -f2 ) -ge 256 ]] && \                                                    #Check if 2nd octet is ge to 256
+        rangeStart="$(( ${rangeStart%.*.*.*} + 1)).0.${rangeStart#*.*.}"                                       #Add 1 to 1st octet, set 2nd to 0, then get last 2
+    [[ ${rangeStart%.*.*.*} -ge 256 ]] && \                                                                    #Check if 1st octet is ge to 256
+        rangeStart="255.${rangeStart#*.}"                                                                      #Set 1st octet to 255, then get last 3
 }
 
-ipSubtraction() {
-    rangeEnd="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(( $(echo $rangeEnd | cut -d"." -f4) - 1))" #Subtracts 1 to last octet of IP, if it results in -1, then it is passed down to 3rd octet
-    if [[ $(echo $rangeEnd | cut -d"." -f4) -le -1 ]]; then
-        rangeEnd="$(echo $rangeEnd | cut -d"." -f1-2).$(( $(echo $rangeEnd | cut -d"." -f3) - 1)).255"
-    fi
-    if [[ $(echo $rangeEnd | cut -d"." -f3) -le -1 ]]; then
-        rangeEnd="$(echo $rangeEnd | cut -d"." -f1).$(( $(echo $rangeEnd | cut -d"." -f2) - 1)).255.$(echo $rangeEnd | cut -d"." -f4)"
-    fi
-    if [[ $(echo $rangeEnd | cut -d"." -f2) -le -1 ]]; then
-        rangeEnd="$(( $(echo $rangeEnd | cut -d"." -f1) - 1)).255.$(echo $rangeEnd | cut -d"." -f3-4)"
-    fi
-    if [[ $(echo $rangeEnd | cut -d"." -f1) -le -1 ]]; then
-        rangeEnd="0.$(echo $rangeEnd | cut -d"." -f2-4)"
-    fi
+ipSubtraction() {                                                                                              #Function for subtracting IPs by 1
+    rangeEnd="${IP#*:}"                                                                                        #Only get IP
+    rangeEnd="${rangeEnd%.*}.$(( ${rangeEnd#*.*.*.} - 1))"                                                     #Get 1st 3 octets, subtract 4th by 1
+    [[ ${rangeEnd#*.*.*.} -le -1 ]] && \                                                                       #Check if 4th octet is le to -1
+        rangeEnd="${rangeEnd%.*.*}.$(( $(echo $rangeEnd | cut -d"." -f3) - 1)).255"                            #Get 1st 2 octets, subtract 3rd by 1, then set 4th to 255
+    [[ $(echo $rangeEnd | cut -d"." -f3) -le -1 ]] && \                                                        #Check if 3rd octet is le to -1
+        rangeEnd="${rangeEnd%.*.*.*}.$(( $(echo $rangeEnd | cut -d"." -f2) - 1)).255.${rangeEnd#*.*.*.}"       #Get 1st octet, subtract 2nd by 1, set 3rd to 255, then get last
+    [[ $(echo $rangeEnd | cut -d"." -f2) -le -1 ]] && \                                                        #Check if 2nd octet is le to -1
+        rangeEnd="$(( ${rangeEnd%.*.*.*} - 1)).255.${rangeEnd#*.*.}"                                           #Subtract 1st octet by 1, set 2nd to 255, then get last 2
+    [[ ${rangeEnd%.*.*.*} -le -1 ]] && \                                                                       #Check if 1st octet is le to -1
+        rangeEnd="0.${rangeEnd#*.}"                                                                            #Set 1st octet to 0, then get last 3
 }
 
-inputBoxOrEditMode() {
-    if ! grep -q "$1" "$currentScope"; then
-        dialogInputbox
+inputBoxOrEditMode() {                      #For checking if a selected option should be edited or added
+    if ! grep -q "$1" "$currentScope"; then #Checks if option exists already ##FIXME: Confirm if an extra test is necessary here
+        dialogInputbox                      #Deploys the menu for adding options
     else
-        editMenuMode
+        editMenuMode                        #Deploys the menu for editing options
     fi
 }
 
 exclusionAdd() {
-    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
-    if grep -q "$1" $exclusionsFile; then #Checks if the IP is already excluded
+    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"   #Sets the file path for the exclusions file
+    if grep -q "$1" $exclusionsFile; then                   #Checks if the IP is already excluded
         dialog --msgbox "That IP is already excluded!" 0 0
     else
-        if [[ $(echo $1 | cut -d"." -f1) -gt 255 || $(echo $1 | cut -d"." -f2) -gt 255 || $(echo $1 | cut -d"." -f3) -gt 255 || $(echo $1 | cut -d"." -f4) -gt 255 ]]; then #Checks if the IP is valid
-            dialog --msgbox "$1 is invalid!!" 0 0
-        elif [[ $(echo $1 | cut -d"." -f1) -lt 0 || $(echo $1 | cut -d"." -f2) -lt 0 || $(echo $1 | cut -d"." -f3) -lt 0 || $(echo $1 | cut -d"." -f4) -lt 0 ]]; then #Checks if the iP is valid
-            dialog --msgbox "$1 is invalid!" 0 0 
-        else
-            echo "Y:$1" >> $exclusionsFile #Puts excluded IP at the end of the file
-            scopeGenerate
-        fi
+        echo "Y:$1" >> $exclusionsFile                      #Puts excluded IP at the end of the file
+        scopeGenerate                                       #Filters out invalid IPs as well as generates the scope into dhcpd.conf
     fi
 }
 
-scopeGenerate() { #This function generates scope ranges according to excluded IPs in the exclusions file
-    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask" #Sets the file path for the exclusions file
-    currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
-    sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o $exclusionsFile $exclusionsFile #Sorts the exclusions file and outputs it to the exclusions file to not confuse the generator
-    sed -i "/X/,/Z/!d" $exclusionsFile #Removes IPs that are outside the scope
-    sed -i "s_ _\n_g" $exclusionsFile #Replaces spaces with newline
+scopeGenerate() {                                                                    #Filters out invalid IPs from exclusion and generates scope range
+    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"                            #File path for exclusions
+    currentScope="$scopeFolder/s$subnet.n$netmask"                                   #File path for scope options
+    sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o $exclusionsFile $exclusionsFile     #Sorts the IPs by ascending
+    sed -i "/X/,/Z/!d" $exclusionsFile                                               #Removes IPs that are outside the scope
+    sed -i "s_ _\n_g" $exclusionsFile                                                #Replaces spaces with newline
     for IP in $(cat $exclusionsFile); do
         case $IP in
-        X:*) #Checks if the current IP being processed is starting range
-            sed -i "/range/d" $currentScope
-            sed -i "/}/d" $currentScope
-            rangeStart=${IP#*:} #Sets the starting range
+        X:*)                                                                         #Checks if IP is start of scope
+            sed -i "/range/d" $currentScope                                          #Removes every instance of range
+            sed -i "/}/d" $currentScope                                              #Removes } from scope options
+            rangeStart=${IP#*:}                                                      #Sets the starting range
         ;;
         Y:*)
-            if [[ $rangeStart == "${IP#*:}" ]]; then #Checks if the IP being processed is excluded and adds 1 to not include it in ranges
-                ipAddition
+            if [[ $rangeStart == "${IP#*:}" ]]; then                                 #Checks if the IP is excluded
+                ipAddition                                                           #IP arithmetic :p
             else
-                rangeEnd=${IP#*:} #Sets the ending range and subtracts by one to not include the excluded IP
-                ipSubtraction
-                echo "    range $rangeStart $rangeEnd;" >> $currentScope #Adds a range to the end of the scope file
-                rangeStart=${$IP#*:} #Sets the starting range for the next excluded IP/end of scope and adds it by one
+                rangeEnd=${IP#*:}                                                    #Sets the ending range and subtracts by one to not include the excluded IP
+                ipSubtraction                                                        #IP arithmetic :p
+                echo "    range $rangeStart $rangeEnd;" >> $currentScope             #Adds new scope range to scope options
+                rangeStart=${$IP#*:}                                                 #Sets the starting range for the next excluded IP/end of scope and adds it by one
                 ipAddition
             fi
         ;;
         Z:*)
-            rangeEnd=$(echo "$IP" | cut -d":" -f2) #Sets the ending range
-            printf -v ip1 "%03d" $(echo $rangeStart | cut -d"." -f1) #Workaround for bug when setting a scope range like 10.1.0.5 10.1.0.15 where the script thinks 10.1.0.5 is bigger than 10.1.0.15
+            rangeEnd=${$IP#*:}                                                       #Sets the ending range
+            printf -v ip1 "%03d" $(echo $rangeStart | cut -d"." -f1) 
             printf -v ip2 "%03d" $(echo $rangeStart | cut -d"." -f2)
             printf -v ip3 "%03d" $(echo $rangeStart | cut -d"." -f3)
             printf -v ip4 "%03d" $(echo $rangeStart | cut -d"." -f4)
-            rangeStart2="$ip1$ip2$ip3$ip4"
+            rangeStart2="$ip1$ip2$ip3$ip4"                                           #Sets 2nd range start to compare 2nd range end
             printf -v ip5 "%03d" $(echo $rangeEnd | cut -d"." -f1)
             printf -v ip6 "%03d" $(echo $rangeEnd | cut -d"." -f2)
             printf -v ip7 "%03d" $(echo $rangeEnd | cut -d"." -f3)
             printf -v ip8 "%03d" $(echo $rangeEnd | cut -d"." -f4)
-            rangeEnd2="$ip5$ip6$ip7$ip8" #End of workaround
-            if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == "$rangeEnd2" ]]; then #Checks if the starting less than or equal to the ending range
-                echo -e "    range $rangeStart $rangeEnd;\n}" >> $currentScope #Adds the range to the end of the scope file along with a }
+            rangeEnd2="$ip5$ip6$ip7$ip8"                                             #Sets 2nd range end to compare 2nd range start
+            if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == "$rangeEnd2" ]]; then #Checks if starting range is less than ending range or if starting range is equal to ending range
+                echo -e "    range $rangeStart $rangeEnd;\n}" >> $currentScope       #Adds the range to the end of the scope file along with a }
             fi
         ;;
         esac
     done
-    serviceRestart
+    serviceRestart                                                                   #Restarts the dhcp server
 }
 
 #Menu functions go under here
@@ -176,7 +164,11 @@ dialogMainMenu() {
                         if ! grep -q "$key " $currentScope; then
                             menuItems+="${optionKeytoName[$key]} . "
                         else
-                            menuItems+="${optionKeytoName[$key]} $(grep "$key " $currentScope | cut -d" " -f7-20 | sed "s_;__g" | sed "s_ _\__g") "
+                            menuItem="$(grep "$key " $currentScope | tr -s " ")"
+                            menuItem="${menuItem#* * }"
+                            menuItem="${menuItem//;}"
+                            menuItem="${menuItem// /_}"
+                            menuItems+="${optionKeytoName[$key]} $menuItem "
                         fi
                     done
                     menuItems+="Exclude_an_IP . "
@@ -190,10 +182,10 @@ dialogMainMenu() {
             exec 3>&1
             networkResult=$(dialog --inputbox "Which network do you want to add? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
             exec 3>&-
-            if ! [[ -z $networkResult ]]; then #Checks if the input is empty
-                subnet=${networkResult% *} #Gets the first value of the input
-                netmask=${networkResult#* } #Gets the second value of the input
-                currentScope="$scopeFolder/s$subnet.n$netmask" #Sets the file path for the scope file
+            if ! [[ -z $networkResult ]]; then                                #Checks if the input is not empty
+                subnet=${networkResult% *}                                    #Gets the first value of the input
+                netmask=${networkResult#* }                                   #Gets the second value of the input
+                currentScope="$scopeFolder/s$subnet.n$netmask"                #Sets the file path for the scope file
                 echo -e "subnet $subnet netmask $netmask{\n}" > $currentScope #Places the subnet and netmask info into the file
                 touch "$exclusionsFolder/s$subnet.n$netmask"
                 dialogEditMenu
@@ -201,12 +193,10 @@ dialogMainMenu() {
         ;;
         3)
             if ! [[ -z $(dir $scopeFolder) ]]; then
-                fileNumber=1 #Sets the file number to 1 to populate the dialog msgbox
                 filesOutput=($(dir $scopeFolder)) #Makes an array of files that are in scopeFolder
                 scopeFiles=""
                 for file in ${filesOutput[*]}; do #Repeatedly adds items to arrays to dynamically create a checklist box
-                    scopeFiles+="$file $fileNumber off "
-                    fileNumber=$(( fileNumber + 1 ))
+                    scopeFiles+="$file . off "
                 done
                 exec 3>&1
                 scopeDelete=($(dialog --checklist "Delete scope(s) - Press space to select." 0 0 0 $scopeFiles 2>&1 1>&3))
@@ -302,7 +292,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     exec 3>&1
     menuResult=$(dialog --menu "Options" 0 0 0 $menuItems 2>&1 1>&3)
     exec 3>&-
-    optionMode="" #To avoid some options having unwanted option modes like subnet-mask being a multi option or a quotes option
+    optionMode="" #Clears the option mode
     case $menuResult in
     "Subnet_mask"|"Broadcast_address")
         optionName="${menuResult//_/ }"
