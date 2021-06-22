@@ -341,7 +341,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
                 exclusionAdd $excluding #Adds an IP to be excluded in the scopes
             else
                 exclusionList=""
-                for ip in $(grep "Y:" $exclusionsFile | tr -d "Y:"); do
+                for IP in $(grep "Y:" $exclusionsFile | tr -d "Y:"); do
                     exclusionList+="$IP . off"
                 done
                 exec 3>&1
