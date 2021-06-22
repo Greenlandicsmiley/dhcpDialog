@@ -159,7 +159,7 @@ dialogMainMenu() {
                 exec 3>&1
                 scopeDelete=($(dialog --checklist "Delete scope(s) - Press space to select. Do not delete example, serviceRestart() depends on it." 0 0 0 $scopeFiles 2>&1 1>&3))
                 exec 3>&-
-                if ! [[ -z "${scopeDelete[@]}" ]]; then
+                if ! [[ -z "${scopeDelete[*]}" ]]; then
                     exec 3>&1
                     scopeDeleteYN=$(dialog --yesno "Are you sure you want to delete these scopes?: ${scopeDelete[*]}" 0 0 2>&1 1>&3)
                     scopeDeleteYN=$?
@@ -360,7 +360,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
                     exec 3>&1
                     removeIPList=($(dialog --checklist "View or remove IPs from exclusion" 0 0 0 $exclusionList 2>&1 1>&3))
                     exec 3>&-
-                    if ! [[ -z "${removeIPList[@]}" ]]; then
+                    if ! [[ -z "${removeIPList[*]}" ]]; then
                         exec 3>&1
                         removeIPYN=$(dialog --yesno "Are you sure you want to remove these IPs from exlcusion?: ${removeIPList[*]}" 0 0 2>&1 1>&3)
                         removeIPYN=$?
