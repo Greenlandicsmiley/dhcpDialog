@@ -34,15 +34,15 @@ serviceRestart() {
 }
 
 ipAddition() {
-    rangeStart="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(expr $(echo $rangeStart | cut -d"." -f4) + 1)" #Adds 1 to last octet of IP, if it results in 256, then it is passed down to 3rd octet. 
+    rangeStart="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(( $(echo $rangeStart | cut -d"." -f4) + 1))" #Adds 1 to last octet of IP, if it results in 256, then it is passed down to 3rd octet. 
     if [[ $(echo $rangeStart | cut -d"." -f4 ) -ge 256 ]]; then
-        rangeStart="$(echo $rangeStart | cut -d"." -f1-2).$(expr $(echo $rangeStart | cut -d"." -f3) + 1).0"
+        rangeStart="$(echo $rangeStart | cut -d"." -f1-2).$(( $(echo $rangeStart | cut -d"." -f3) + 1)).0"
     fi
     if [[ $(echo $rangeStart | cut -d"." -f3 ) -ge 256 ]]; then
-        rangeStart="$(echo $rangeStart | cut -d"." -f1).$(expr $(echo $rangeStart | cut -d"." -f2) + 1).0.$(echo $rangeStart | cut -d"." -f4)"
+        rangeStart="$(echo $rangeStart | cut -d"." -f1).$(( $(echo $rangeStart | cut -d"." -f2) + 1)).0.$(echo $rangeStart | cut -d"." -f4)"
     fi
     if [[ $(echo $rangeStart | cut -d"." -f2 ) -ge 256 ]]; then
-        rangeStart="$(expr $(echo $rangeStart | cut -d"." -f1) + 1).0.$(echo $rangeStart | cut -d"." -f3-4)"
+        rangeStart="$(( $(echo $rangeStart | cut -d"." -f1) + 1)).0.$(echo $rangeStart | cut -d"." -f3-4)"
     fi
     if [[ $(echo $rangeStart | cut -d"." -f1 ) -ge 256 ]]; then
         rangeStart="255.$(echo $rangeStart | cut -d"." -f2-4)"
@@ -50,15 +50,15 @@ ipAddition() {
 }
 
 ipSubtraction() {
-    rangeEnd="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(expr $(echo $rangeEnd | cut -d"." -f4) - 1)" #Subtracts 1 to last octet of IP, if it results in -1, then it is passed down to 3rd octet
+    rangeEnd="$(echo "$IP" | cut -d":" -f2 | cut -d"." -f1-3).$(( $(echo $rangeEnd | cut -d"." -f4) - 1))" #Subtracts 1 to last octet of IP, if it results in -1, then it is passed down to 3rd octet
     if [[ $(echo $rangeEnd | cut -d"." -f4) -le -1 ]]; then
-        rangeEnd="$(echo $rangeEnd | cut -d"." -f1-2).$(expr $(echo $rangeEnd | cut -d"." -f3) - 1).255"
+        rangeEnd="$(echo $rangeEnd | cut -d"." -f1-2).$(( $(echo $rangeEnd | cut -d"." -f3) - 1)).255"
     fi
     if [[ $(echo $rangeEnd | cut -d"." -f3) -le -1 ]]; then
-        rangeEnd="$(echo $rangeEnd | cut -d"." -f1).$(expr $(echo $rangeEnd | cut -d"." -f2) - 1).255.$(echo $rangeEnd | cut -d"." -f4)"
+        rangeEnd="$(echo $rangeEnd | cut -d"." -f1).$(( $(echo $rangeEnd | cut -d"." -f2) - 1)).255.$(echo $rangeEnd | cut -d"." -f4)"
     fi
     if [[ $(echo $rangeEnd | cut -d"." -f2) -le -1 ]]; then
-        rangeEnd="$(expr $(echo $rangeEnd | cut -d"." -f1) - 1).255.$(echo $rangeEnd | cut -d"." -f3-4)"
+        rangeEnd="$(( $(echo $rangeEnd | cut -d"." -f1) - 1)).255.$(echo $rangeEnd | cut -d"." -f3-4)"
     fi
     if [[ $(echo $rangeEnd | cut -d"." -f1) -le -1 ]]; then
         rangeEnd="0.$(echo $rangeEnd | cut -d"." -f2-4)"
@@ -152,7 +152,7 @@ dialogMainMenu() {
                 scopeFiles=""
                 for file in ${filesOutput[*]}; do #Repeatedly adds items to arrays to dynamically create a checklist box
                     scopeFiles+="$file $fileNumber off "
-                    let "fileNumber += 1"
+                    fileNumber=$(( fileNumber + 1 ))
                 done
                 exec 3>&1
                 scopeDelete=($(dialog --checklist "Delete scope(s) - Press space to select. Do not delete example, serviceRestart() depends on it." 0 0 0 $scopeFiles 2>&1 1>&3))
@@ -347,7 +347,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
                 exec 3>&1
                 removeIPList=($(dialog --checklist "View or remove IPs from exclusion" 0 0 0 $exclusionList 2>&1 1>&3))
                 exec 3>&-
-                if ! [[ -z $deleteIPList ]]; then
+                if ! [[ -z $removeIPList ]]; then
                     exec 3>&1
                     removeIPYN=$(dialog --yesno "Are you sure you wantt to remove these IPs from exlcusion?: ${removeIPList[*]}" 0 0 2>&1 1>&3)
                     removeIPYN=$?
