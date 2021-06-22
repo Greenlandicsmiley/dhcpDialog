@@ -113,8 +113,10 @@ dialogMainMenu() {
             currentScope="$scopeFolder/$editChooseScope"
             if ! [[ -z $editChooseScope || $editChooseScope == "Cancel" ]]; then
                 if [[ $editChooseScope != "example" ]]; then
-                    subnet=$(echo $editChooseScope | cut -d"." -f1-4 | sed "s_s__g")
-                    netmask=$(echo $editChooseScope | cut -d"." -f5-8 | sed "s_n__g")
+                    subnet=${editChooseScope%.*.*.*.*}
+                    subnet=${subnet/s/}
+                    netmask=${editChooseScope#*.*.*.*.}
+                    netmask=${netmask/n/}
                     dialogEditMenu
                 else
                     menuItems=""
@@ -176,8 +178,12 @@ dialogMainMenu() {
         ;;
         4)
             echo "" > $activeLeasesFile #Clear the active leases file
-            leasesDump=$(grep -n "lease.*{\|}" $leasesFile | sed "s_lease __" | sed "s_ {__") #Create a dump of all the logged leases in /var/lib/dhcp/dhcpd.leases
-            leasesDump=$(echo $leasesDump | sed "s_} _},_g" | sed "s_ _:_g" | sed "s_,_ _g") #Filter it out further
+            leasesDump=$(grep -n "lease.*{\|}" $leasesFile) #Create a dump of all the logged leases in /var/lib/dhcp/dhcpd.leases
+            leasesDump=${leasesDump//lease /}
+            leasesDump=${leasesDump// \{/}
+            leasesDump=${leasesDump//\} /\},}
+            leasesDump=${leasesDump// /:}
+            leasesDump=${leasesDump//,/ }
             for lease in $leasesDump; do #Go through all the leases
                 if [[ $(echo $lease | cut -d":" -f1) == $(grep -n "lease $(echo $lease | cut -d":" -f2)" $leasesFile | tail -n 1 | cut -d":" -f1) ]]; then #Check if the current lease being check is the latest
                     startLine=$(echo $lease | cut -d":" -f1) #Get the starting line number of the lease
@@ -185,14 +191,18 @@ dialogMainMenu() {
                     for activeLease in $(grep -n "binding state active" $leasesFile | cut -d":" -f1); do #Go through all leases active leases
                         if [[ $activeLease -gt $startLine && $activeLease -lt $endLine ]]; then #Check if the lease being checked is an active lease
                             sed -n "${startLine},${endLine}p" $leasesFile >> $activeLeasesFile #Output the lease into a file
-                            leasesMenu+="$(echo $lease | cut -d":" -f2) . " #Add the lease to a dialog menu
+                            leasesMenu+="${lease#*:} . " #Add the lease to a dialog menu
                         fi
                     done
                 fi
             done
             sed -i "1d" $activeLeasesFile #Delete the first line of active leases file to look nicer
-            leasesDump=$(grep -n "lease.*{\|}" $activeLeasesFile | sed "s_lease __" | sed "s_ {__") #Create a dump of all the logged leases in the latest.leases file
-            leasesDump=$(echo $leasesDump | sed "s_} _},_g" | sed "s_ _:_g" | sed "s_,_ _g") #Filter it out further
+            leasesDump=$(grep -n "lease.*{\|}" $activeLeasesFile) #Create a dump of all the logged leases in the latest.leases file
+            leasesDump=${leasesDump//lease /}
+            leasesDump=${leasesDump// \{/}
+            leasesDump=${leasesDump//\} /\},}
+            leasesDump=${leasesDump// /:}
+            leasesDump=${leasesDump//,/ }
             exec 3>&1
             leaseMenu=$(dialog --no-cancel --menu "View active leases" 0 0 0 $leasesMenu 2>&1 1>&3) #Menu for viewing leases inside a dialog menu
             exec 3>&-
@@ -232,7 +242,9 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
     if ! $(grep -q "X" "$exclusionsFolder/s$subnet.n$netmask"); then #Reason for just X and not including Z (end of a scope): I am assuming Z is already included with X
         menuItems+="Set_scope_range . "
     else
-        menuItems+="Change_scope_range Start:$(grep "X" "$exclusionsFolder/s$subnet.n$netmask" | cut -d":" -f2)_End:$(grep "Z" "$exclusionsFolder/s$subnet.n$netmask" | cut -d":" -f2) "
+        startValue="$(grep "X:" "$exclusionsFolder/s$subnet.n$netmask")"
+        endValue="$(grep "Z:" "$exclusionsFolder/s$subnet.n$netmask")"
+        menuItems+="Change_scope_range Start:${startValue#*:}_End:${endValue#*:} "
     fi
     menuItems+="Back . "
     exec 3>&1
@@ -373,16 +385,16 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         exec 3>&-
         if ! [[ -z $scopeRange ]]; then
             if $(grep -q "X:" $exclusionsFile); then #Checks if the user has already added a scope range
-                replaceLine=$(echo $scopeRange | cut -d" " -f1) #Sets the variable to the first IP the user has put in the input box
+                replaceLine=${scopeRange% *} #Sets the variable to the first IP the user has put in the input box
                 sed -i "/X/s|.*|X:${replaceLine}|" $exclusionsFile #Replaces the entire line with the desired scope range start
             else
-                echo "X:$(echo $scopeRange | cut -d" " -f1)" >> $exclusionsFile #Puts the first IP the user has put in the input box at the end of the exclusions file
+                echo "X:${scopeRange% *}" >> $exclusionsFile #Puts the first IP the user has put in the input box at the end of the exclusions file
             fi
             if $(grep -q "Z:" $exclusionsFile); then #Same with previous
-                replaceLine=$(echo $scopeRange | cut -d" " -f2)
+                replaceLine=${scopeRange#* }
                 sed -i "/Z/s_.*_Z:${replaceLine}_" $exclusionsFile
             else
-                echo "Z:$(echo $scopeRange | cut -d" " -f2)" >> $exclusionsFile
+                echo "Z:${scopeRange#* }" >> $exclusionsFile
             fi
             scopeGenerate
         else
@@ -449,16 +461,16 @@ scopeGenerate() { #This function generates scope ranges according to excluded IP
         X:*) #Checks if the current IP being processed is starting range
             sed -i "/range/d" $currentScope
             sed -i "/}/d" $currentScope
-            rangeStart=$(echo "$IP" | cut -d":" -f2) #Sets the starting range
+            rangeStart=${IP#*:} #Sets the starting range
         ;;
         Y:*)
-            if [[ $rangeStart == $(echo $IP | cut -d":" -f2) ]]; then #Checks if the IP being processed is excluded and adds 1 to not include it in ranges
+            if [[ $rangeStart == ${IP#*:} ]]; then #Checks if the IP being processed is excluded and adds 1 to not include it in ranges
                 ipAddition
             else
-                rangeEnd=$(echo "$IP" | cut -d":" -f2) #Sets the ending range and subtracts by one to not include the excluded IP
+                rangeEnd=${IP#*:} #Sets the ending range and subtracts by one to not include the excluded IP
                 ipSubtraction
                 echo "    range $rangeStart $rangeEnd;" >> $currentScope #Adds a range to the end of the scope file
-                rangeStart=$(echo "$IP" | cut -d":" -f2) #Sets the starting range for the next excluded IP/end of scope and adds it by one
+                rangeStart=${$IP#*:} #Sets the starting range for the next excluded IP/end of scope and adds it by one
                 ipAddition
             fi
         ;;
