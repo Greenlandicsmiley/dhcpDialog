@@ -38,7 +38,6 @@ serviceRestart() {
 }
 
 ipAddition() {                                                                                                 #Function for adding IPs by 1
-    rangeStart="${IP#*:}"                                                                                      #Only get IP
     rangeStart="${rangeStart%.*}.$(( ${rangeStart#*.*.*.} + 1))"                                               #Get 1st 3 octets, add 1 to 4th
     [[ ${rangeStart#*.*.*.} -ge 256 ]] && \                                                                    #Check if 4th octet is ge to 256
         rangeStart="${rangeStart%.*.*}.$(( $(echo "$rangeStart" | cut -d"." -f3) + 1)).0"                        #Get 1st 2 octets, add 1 to 3rd, then set last to 0
@@ -51,7 +50,6 @@ ipAddition() {                                                                  
 }
 
 ipSubtraction() {                                                                                              #Function for subtracting IPs by 1
-    rangeEnd="${IP#*:}"                                                                                        #Only get IP
     rangeEnd="${rangeEnd%.*}.$(( ${rangeEnd#*.*.*.} - 1))"                                                     #Get 1st 3 octets, subtract 4th by 1
     [[ ${rangeEnd#*.*.*.} -le -1 ]] && \                                                                       #Check if 4th octet is le to -1
         rangeEnd="${rangeEnd%.*.*}.$(( $(echo "$rangeEnd" | cut -d"." -f3) - 1)).255"                            #Get 1st 2 octets, subtract 3rd by 1, then set 4th to 255
@@ -89,12 +87,12 @@ scopeGenerate() {                                                               
     sed -i "s_ _\n_g" "$exclusionsFile"                                              #Replaces spaces with newline
     for IP in $(cat "$exclusionsFile"); do
         case $IP in
-        X:*)                                                                         #Checks if IP is start of scope
+        "X:"*)                                                                         #Checks if IP is start of scope
             sed -i "/range/d" "$currentScope"                                        #Removes every instance of range
             sed -i "/}/d" "$currentScope"                                            #Removes } from scope options
             rangeStart=${IP#*:}                                                      #Sets the starting range
         ;;
-        Y:*)
+        "Y:"*)
             if [[ $rangeStart == "${IP#*:}" ]]; then                                 #Checks if the IP is excluded
                 ipAddition                                                           #IP arithmetic :p
             else
@@ -105,9 +103,9 @@ scopeGenerate() {                                                               
                 ipAddition
             fi
         ;;
-        Z:*)
+        "Z:"*)
             rangeEnd=${IP#*:}                                                       #Sets the ending range
-            printf -v ip1 "%03d" "$(echo $rangeStart | cut -d"." -f1) "
+            printf -v ip1 "%03d" "$(echo $rangeStart | cut -d"." -f1)"
             printf -v ip2 "%03d" "$(echo $rangeStart | cut -d"." -f2)"
             printf -v ip3 "%03d" "$(echo $rangeStart | cut -d"." -f3)"
             printf -v ip4 "%03d" "$(echo $rangeStart | cut -d"." -f4)"
