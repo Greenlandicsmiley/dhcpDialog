@@ -37,32 +37,32 @@ serviceRestart() {
     #service
 }
 
-ipAddition() {                                                                                                 #Function for adding IPs by 1
-    rangeStart="${rangeStart%.*}.$(( ${rangeStart#*.*.*.} + 1))"                                               #Get 1st 3 octets, add 1 to 4th
-    [[ ${rangeStart#*.*.*.} -ge 256 ]] && \                                                                    #Check if 4th octet is ge to 256
+ipAddition() {                                                                                                   #Function for adding IPs by 1
+    rangeStart="${rangeStart%.*}.$(( ${rangeStart#*.*.*.} + 1))"                                                 #Get 1st 3 octets, add 1 to 4th
+    [[ ${rangeStart#*.*.*.} -ge 256 ]] && \                                                                      #Check if 4th octet is ge to 256
         rangeStart="${rangeStart%.*.*}.$(( $(echo "$rangeStart" | cut -d"." -f3) + 1)).0"                        #Get 1st 2 octets, add 1 to 3rd, then set last to 0
     [[ $(echo "$rangeStart" | cut -d"." -f3 ) -ge 256 ]] && \                                                    #Check if 3rd octet is ge to 256
         rangeStart="${rangeStart%.*.*.*}.$(( $(echo "$rangeStart" | cut -d"." -f2) + 1)).0.${rangeStart#*.*.*.}" #Get 1st octet, add 1 to 2nd, set 3rd to 0, then get 4th
     [[ $(echo "$rangeStart" | cut -d"." -f2 ) -ge 256 ]] && \                                                    #Check if 2nd octet is ge to 256
-        rangeStart="$(( ${rangeStart%.*.*.*} + 1)).0.${rangeStart#*.*.}"                                       #Add 1 to 1st octet, set 2nd to 0, then get last 2
-    [[ ${rangeStart%.*.*.*} -ge 256 ]] && \                                                                    #Check if 1st octet is ge to 256
-        rangeStart="255.${rangeStart#*.}"                                                                      #Set 1st octet to 255, then get last 3
+        rangeStart="$(( ${rangeStart%.*.*.*} + 1)).0.${rangeStart#*.*.}"                                         #Add 1 to 1st octet, set 2nd to 0, then get last 2
+    [[ ${rangeStart%.*.*.*} -ge 256 ]] && \                                                                      #Check if 1st octet is ge to 256
+        rangeStart="255.${rangeStart#*.}"                                                                        #Set 1st octet to 255, then get last 3
 }
 
-ipSubtraction() {                                                                                              #Function for subtracting IPs by 1
-    rangeEnd="${rangeEnd%.*}.$(( ${rangeEnd#*.*.*.} - 1))"                                                     #Get 1st 3 octets, subtract 4th by 1
-    [[ ${rangeEnd#*.*.*.} -le -1 ]] && \                                                                       #Check if 4th octet is le to -1
+ipSubtraction() {                                                                                                #Function for subtracting IPs by 1
+    rangeEnd="${rangeEnd%.*}.$(( ${rangeEnd#*.*.*.} - 1))"                                                       #Get 1st 3 octets, subtract 4th by 1
+    [[ ${rangeEnd%.*.*.*} -le -1 ]] && \                                                                         #Check if 4th octet is le to -1
         rangeEnd="${rangeEnd%.*.*}.$(( $(echo "$rangeEnd" | cut -d"." -f3) - 1)).255"                            #Get 1st 2 octets, subtract 3rd by 1, then set 4th to 255
     [[ $(echo "$rangeEnd" | cut -d"." -f3) -le -1 ]] && \                                                        #Check if 3rd octet is le to -1
         rangeEnd="${rangeEnd%.*.*.*}.$(( $(echo "$rangeEnd" | cut -d"." -f2) - 1)).255.${rangeEnd#*.*.*.}"       #Get 1st octet, subtract 2nd by 1, set 3rd to 255, then get last
     [[ $(echo "$rangeEnd" | cut -d"." -f2) -le -1 ]] && \                                                        #Check if 2nd octet is le to -1
-        rangeEnd="$(( ${rangeEnd%.*.*.*} - 1)).255.${rangeEnd#*.*.}"                                           #Subtract 1st octet by 1, set 2nd to 255, then get last 2
-    [[ ${rangeEnd%.*.*.*} -le -1 ]] && \                                                                       #Check if 1st octet is le to -1
-        rangeEnd="0.${rangeEnd#*.}"                                                                            #Set 1st octet to 0, then get last 3
+        rangeEnd="$(( ${rangeEnd%.*.*.*} - 1)).255.${rangeEnd#*.*.}"                                             #Subtract 1st octet by 1, set 2nd to 255, then get last 2
+    [[ ${rangeEnd#*.*.*.} -le -1 ]] && \                                                                         #Check if 1st octet is le to -1
+        rangeEnd="0.${rangeEnd#*.}"                                                                              #Set 1st octet to 0, then get last 3
 }
 
 inputBoxOrEditMode() {                                                #For checking if a selected option should be edited or added
-    if ! grep -q "$1 " "$currentScope"; then #Checks if option exists already ##FIXME: Confirm if an extra test is necessary here
+    if ! grep -q "$1 " "$currentScope"; then                          #Checks if option exists already ##FIXME: Confirm if an extra test is necessary here
         dialogInputbox                                                #Deploys the menu for adding options
     else
         editMenuMode                                                  #Deploys the menu for editing options
