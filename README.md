@@ -8,7 +8,7 @@ An interactive isc dhcp server scope management utility written in Bash using Di
 
 ## Requirements:
 
-Coreutils, Bash, Dialog, ISC dhcp server not necessarily needed.
+Coreutils, Bash, Dialog, isc dhcp server not necessarily needed.
 
 Bash version requirement currently unknown.
 
