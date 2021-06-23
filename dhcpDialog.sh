@@ -165,7 +165,7 @@ dialogMainMenu() {
                             menuItems+="${optionKeytoName[$key]} . "
                         else
                             menuItem="$(grep "$key " "$currentScope" | tr -s " ")"
-                            menuItem="${menuItem#* * }"
+                            menuItem="${menuItem# * * }"
                             menuItem="${menuItem//;}"
                             menuItem="${menuItem// /_}"
                             menuItems+="${optionKeytoName[$key]} $menuItem "
@@ -279,7 +279,7 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
             menuItems+="${optionKeytoName[$key]} . "
         else
             menuItem="$(grep "$key " "$currentScope" | tr -s " ")"
-            menuItem="${menuItem#* * }"
+            menuItem="${menuItem# * * }"
             menuItem="${menuItem//;}"
             menuItem="${menuItem// /_}"
             menuItems+="${optionKeytoName[$key]} $menuItem "
