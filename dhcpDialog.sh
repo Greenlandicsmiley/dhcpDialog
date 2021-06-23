@@ -84,7 +84,7 @@ scopeGenerate() {
     currentScope="$scopeFolder/s$subnet.n$netmask"
     sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o "$exclusionsFile" "$exclusionsFile"
     sed -i "/X/,/Z/!d" "$exclusionsFile"
-    sed -i "s_ _\n_g" "$exclusionsFile"
+    sed -i "s_ _\\n_g" "$exclusionsFile"
     for IP in $(cat "$exclusionsFile"); do
         case $IP in
         "X:"*)
@@ -105,18 +105,18 @@ scopeGenerate() {
         ;;
         "Z:"*)
             rangeEnd=${IP#*:}
-            printf -v ip1 "%03d" "$(echo $rangeStart | cut -d"." -f1)"
-            printf -v ip2 "%03d" "$(echo $rangeStart | cut -d"." -f2)"
-            printf -v ip3 "%03d" "$(echo $rangeStart | cut -d"." -f3)"
-            printf -v ip4 "%03d" "$(echo $rangeStart | cut -d"." -f4)"
+            printf -v ip1 "%03d" "$(echo "$rangeStart" | cut -d"." -f1)"
+            printf -v ip2 "%03d" "$(echo "$rangeStart" | cut -d"." -f2)"
+            printf -v ip3 "%03d" "$(echo "$rangeStart" | cut -d"." -f3)"
+            printf -v ip4 "%03d" "$(echo "$rangeStart" | cut -d"." -f4)"
             rangeStart2="$ip1$ip2$ip3$ip4"
-            printf -v ip5 "%03d" "$(echo $rangeEnd | cut -d"." -f1)"
-            printf -v ip6 "%03d" "$(echo $rangeEnd | cut -d"." -f2)"
-            printf -v ip7 "%03d" "$(echo $rangeEnd | cut -d"." -f3)"
-            printf -v ip8 "%03d" "$(echo $rangeEnd | cut -d"." -f4)"
+            printf -v ip5 "%03d" "$(echo "$rangeEnd" | cut -d"." -f1)"
+            printf -v ip6 "%03d" "$(echo "$rangeEnd" | cut -d"." -f2)"
+            printf -v ip7 "%03d" "$(echo "$rangeEnd" | cut -d"." -f3)"
+            printf -v ip8 "%03d" "$(echo "$rangeEnd" | cut -d"." -f4)"
             rangeEnd2="$ip5$ip6$ip7$ip8"
             if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == "$rangeEnd2" ]]; then
-                echo -e "    range $rangeStart $rangeEnd;\n}" >> "$currentScope"
+                echo -e "    range $rangeStart $rangeEnd;\\n}" >> "$currentScope"
             fi
         ;;
         esac
@@ -184,7 +184,7 @@ dialogMainMenu() {
                 subnet=${networkResult% *}
                 netmask=${networkResult#* }
                 currentScope="$scopeFolder/s$subnet.n$netmask"
-                echo -e "subnet $subnet netmask $netmask{\n}" > "$currentScope"
+                echo -e "subnet $subnet netmask $netmask{\\n}" > "$currentScope"
                 touch "$exclusionsFolder/s$subnet.n$netmask"
                 dialogEditMenu
             fi
@@ -218,7 +218,7 @@ dialogMainMenu() {
         ;;
         4)
             echo "" > $activeLeasesFile
-            leasesDump=$(grep -n "lease.*{\|}" $leasesFile)
+            leasesDump=$(grep -n "lease.*{\\|}" $leasesFile)
             leasesDump=${leasesDump//lease /}
             leasesDump=${leasesDump// \{/}
             leasesDump=${leasesDump//\} /\},}
@@ -237,7 +237,7 @@ dialogMainMenu() {
                 fi
             done
             sed -i "1d" $activeLeasesFile
-            leasesDump=$(grep -n "lease.*{\|}" "$activeLeasesFile")
+            leasesDump=$(grep -n "lease.*{\\|}" "$activeLeasesFile")
             leasesDump=${leasesDump//lease /}
             leasesDump=${leasesDump// \{/}
             leasesDump=${leasesDump//\} /\},}
@@ -395,9 +395,9 @@ dialogInputbox() {
                 sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionResult};_" "$currentScope"
             fi
         elif [[ $optionMode == "quotes" ]]; then
-            sed -i "/}/s_.*_    option ${optionCode} \"${optionResult}\";\n}_" "$currentScope"
+            sed -i "/}/s_.*_    option ${optionCode} \"${optionResult}\";\\n}_" "$currentScope"
         else
-            sed -i "/}/s_.*_    option ${optionCode} ${optionResult};\n}_" "$currentScope"
+            sed -i "/}/s_.*_    option ${optionCode} ${optionResult};\\n}_" "$currentScope"
         fi
         serviceRestart
     fi
