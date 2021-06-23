@@ -99,7 +99,7 @@ scopeGenerate() {                                                               
                 rangeEnd=${IP#*:}                                                    #Sets the ending range and subtracts by one to not include the excluded IP
                 ipSubtraction                                                        #IP arithmetic :p
                 echo "    range $rangeStart $rangeEnd;" >> "$currentScope"           #Adds new scope range to scope options
-                rangeStart=${$IP#*:}                                                 #Sets the starting range for the next excluded IP/end of scope and adds it by one
+                rangeStart=${IP#*:}                                                 #Sets the starting range for the next excluded IP/end of scope and adds it by one
                 ipAddition
             fi
         ;;
