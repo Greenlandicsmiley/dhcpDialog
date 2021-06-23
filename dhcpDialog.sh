@@ -106,7 +106,7 @@ scopeGenerate() {                                                               
             fi
         ;;
         Z:*)
-            rangeEnd=${$IP#*:}                                                       #Sets the ending range
+            rangeEnd=${IP#*:}                                                       #Sets the ending range
             printf -v ip1 "%03d" "$(echo $rangeStart | cut -d"." -f1) "
             printf -v ip2 "%03d" "$(echo $rangeStart | cut -d"." -f2)"
             printf -v ip3 "%03d" "$(echo $rangeStart | cut -d"." -f3)"
