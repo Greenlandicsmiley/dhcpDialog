@@ -38,7 +38,7 @@ To update the script
 
 ## Uninstall
 
-You can run `dhcpDialog --uninstall` or `make uninstall` to uninstall dhcpDialog.
+You can run `dhcpDialog --uninstall`, `dhcpDialog -u` or `make uninstall` to uninstall dhcpDialog.
 
 ## Why would anyone need/use this?
 
