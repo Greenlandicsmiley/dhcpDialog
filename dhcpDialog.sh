@@ -433,7 +433,7 @@ editMenuMode() {
     fi
 }
 
-if [[ $1 == "--uninstall" ]]; then
+if [[ $1 == "--uninstall" || $1 == "-u" ]]; then
     rm -rf /opt/dhcpDialog
     rm /usr/bin/dhcpDialog
 else
