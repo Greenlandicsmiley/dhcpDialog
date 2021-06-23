@@ -63,11 +63,11 @@ ipSubtraction() {                                                               
         rangeEnd="0.${rangeEnd#*.}"                                                                            #Set 1st octet to 0, then get last 3
 }
 
-inputBoxOrEditMode() {                      #For checking if a selected option should be edited or added
-    if ! grep -q "$1" "$currentScope"; then #Checks if option exists already ##FIXME: Confirm if an extra test is necessary here
-        dialogInputbox                      #Deploys the menu for adding options
+inputBoxOrEditMode() {                                                #For checking if a selected option should be edited or added
+    if ! grep -q "$1 " "$currentScope"; then #Checks if option exists already ##FIXME: Confirm if an extra test is necessary here
+        dialogInputbox                                                #Deploys the menu for adding options
     else
-        editMenuMode                        #Deploys the menu for editing options
+        editMenuMode                                                  #Deploys the menu for editing options
     fi
 }
 
