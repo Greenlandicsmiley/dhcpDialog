@@ -27,106 +27,102 @@ optionNametoKey=(["Subnet_mask"]="subnet-mask" ["Router(s)"]="routers" ["DNS_ser
 
 #Non-menu functions go here
 serviceRestart() {
-    scopeDirCount=($(ls $scopeFolder/s*))
-    exclusionsDirCount=($(ls $exclusionsFolder/s*))
-    if [[ ${#scopeDirCount[@]} -ge 1 && ${#exclusionsDirCount[@]} -ge 1 ]]; then
-        cat $scopeFolder/s*.n* > $dhcpdConfFile
-    else
-        echo "" > $dhcpdConfFile
-    fi
+    cat $scopeFolder/s* > $dhcpdConfFile
     #service
 }
 
 ipAddition() {
-    rangeStart="${rangeStart%.*}.$(( ${rangeStart#*.*.*.} + 1))"
+    range_start_octet_2="${rangeStart#*.}" && range_start_octet_2="${rangeStart%.*.*}"
+    range_start_octet_3="${rangeStart#*.*.}" && range_start_octet_3="${rangeStart%.*}"
+    rangeStart="${rangeStart%.*}.$(( ${rangeStart#*.*.*.} + 1 ))"
     [[ ${rangeStart#*.*.*.} -ge 256 ]] && \
-        rangeStart="${rangeStart%.*.*}.$(( $(echo "$rangeStart" | cut -d"." -f3) + 1)).0"
-    [[ $(echo "$rangeStart" | cut -d"." -f3 ) -ge 256 ]] && \
-        rangeStart="${rangeStart%.*.*.*}.$(( $(echo "$rangeStart" | cut -d"." -f2) + 1)).0.${rangeStart#*.*.*.}"
-    [[ $(echo "$rangeStart" | cut -d"." -f2 ) -ge 256 ]] && \
-        rangeStart="$(( ${rangeStart%.*.*.*} + 1)).0.${rangeStart#*.*.}"
+        rangeStart="${rangeStart%.*.*}.$(( range_start_octet_3 + 1 )).0"
+    [[ $range_start_octet_3 -ge 256 ]] && \
+        rangeStart="${rangeStart%.*.*.*}.$(( range_start_octet_2 + 1 )).0.${rangeStart#*.*.*.}"
+    [[ $range_start_octet_2 -ge 256 ]] && \
+        rangeStart="$(( ${rangeStart%.*.*.*} + 1 )).0.${rangeStart#*.*.}"
     [[ ${rangeStart%.*.*.*} -ge 256 ]] && \
         rangeStart="255.${rangeStart#*.}"
 }
 
 ipSubtraction() {
-    rangeEnd="${rangeEnd%.*}.$(( ${rangeEnd#*.*.*.} - 1))"
-    [[ ${rangeEnd#*.*.*.} -le -1 ]] && \
-        rangeEnd="${rangeEnd%.*.*}.$(( $(echo "$rangeEnd" | cut -d"." -f3) - 1)).255"
-    [[ $(echo "$rangeEnd" | cut -d"." -f3) -le -1 ]] && \
-        rangeEnd="${rangeEnd%.*.*.*}.$(( $(echo "$rangeEnd" | cut -d"." -f2) - 1)).255.${rangeEnd#*.*.*.}"
-    [[ $(echo "$rangeEnd" | cut -d"." -f2) -le -1 ]] && \
-        rangeEnd="$(( ${rangeEnd%.*.*.*} - 1)).255.${rangeEnd#*.*.}"
-    [[ ${rangeEnd%.*.*.*} -le -1 ]] && \
-        rangeEnd="0.${rangeEnd#*.}"
+    range_end_octet_2="${range_end#*.}" && range_start_octet_2="${range_end%.*.*}"
+    range_end_octet_3="${range_end#*.*.}" && range_start_octet_3="${range_end%.*}"
+    range_end="${range_end%.*}.$(( ${range_end#*.*.*.} - 1 ))"
+    [[ ${range_end#*.*.*.} -le -1 ]] && \
+        range_end="${range_end%.*.*}.$(( range_end_octet_3 - 1 )).255"
+    [[ $range_end_octet_3 -le -1 ]] && \
+        range_end="${range_end%.*.*.*}.$(( range_end_octet_2 - 1 )).255.${range_end#*.*.*.}"
+    [[ $range_end_octet_2 -le -1 ]] && \
+        range_end="$(( ${range_end%.*.*.*} - 1 )).255.${range_end#*.*.}"
+    [[ ${range_end%.*.*.*} -le -1 ]] && \
+        range_end="0.${range_end#*.}"
 }
 
 inputBoxOrEditMode() {
-    if ! grep -q "$1 " "$currentScope"; then
-        dialogInputbox
-    else
-        editMenuMode
-    fi
+    grep -q "$1 " "$currentScope" && \
+        editMenuMode && return 0
+    dialogInputbox
 }
 
 exclusionAdd() {
     exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
-    if grep -q "$1" "$exclusionsFile"; then
-        dialog --msgbox "That IP is already excluded!" 0 0
-    else
-        echo "Y:$1" >> "$exclusionsFile"
-        scopeGenerate
-    fi
+    grep -q "$1" "$exclusionsFile" && \
+        dialog --msgbox "That IP is already excluded!" 0 0 && return 0
+    echo "Y:$1" >> "$exclusionsFile"
+    scopeGenerate
 }
 
-scopeGenerate() {                                                                   
-    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
-    currentScope="$scopeFolder/s$subnet.n$netmask"
-    sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o "$exclusionsFile" "$exclusionsFile"
-    sed -i "/X/,/Z/!d" "$exclusionsFile"
-    sed -i "s_ _\\n_g" "$exclusionsFile"
-    for IP in $(cat "$exclusionsFile"); do
-        case $IP in
-        "X:"*)
-            sed -i "/range/d" "$currentScope"
-            sed -i "/}/d" "$currentScope"
-            rangeStart=${IP#*:}
-        ;;
-        "Y:"*)
-            if [[ $rangeStart == "${IP#*:}" ]]; then
-                ipAddition
-            else
-                rangeEnd=${IP#*:}
-                ipSubtraction
-                echo "    range $rangeStart $rangeEnd;" >> "$currentScope"
-                rangeStart=${IP#*:}
-                ipAddition
-            fi
-        ;;
-        "Z:"*)
-            rangeEnd=${IP#*:}
-            printf -v ip1 "%03d" "$(echo "$rangeStart" | cut -d"." -f1)"
-            printf -v ip2 "%03d" "$(echo "$rangeStart" | cut -d"." -f2)"
-            printf -v ip3 "%03d" "$(echo "$rangeStart" | cut -d"." -f3)"
-            printf -v ip4 "%03d" "$(echo "$rangeStart" | cut -d"." -f4)"
-            rangeStart2="$ip1$ip2$ip3$ip4"
-            printf -v ip5 "%03d" "$(echo "$rangeEnd" | cut -d"." -f1)"
-            printf -v ip6 "%03d" "$(echo "$rangeEnd" | cut -d"." -f2)"
-            printf -v ip7 "%03d" "$(echo "$rangeEnd" | cut -d"." -f3)"
-            printf -v ip8 "%03d" "$(echo "$rangeEnd" | cut -d"." -f4)"
-            rangeEnd2="$ip5$ip6$ip7$ip8"
-            if [[ $rangeStart2 < $rangeEnd2 || $rangeStart2 == "$rangeEnd2" ]]; then
-                echo -e "    range $rangeStart $rangeEnd;\\n}" >> "$currentScope"
-            fi
-        ;;
-        esac
-    done
+scopeGenerate() {            
+    if grep -q "X:\\|Z:" "$exclusionsFile"; then                                                       
+        exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
+        currentScope="$scopeFolder/s$subnet.n$netmask"
+        sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o "$exclusionsFile" "$exclusionsFile"
+        sed -i "/X/,/Z/!d" "$exclusionsFile"
+        for IP in $(< "$exclusionsFile"); do
+            case $IP in
+            "X:"*)
+                sed -i "/range/d" "$currentScope"
+                sed -i "/}/d" "$currentScope"
+                rangeStart=${IP:2}
+            ;;
+            "Y:"*)
+                if [[ $rangeStart == "${IP:2}" ]]; then
+                    ipAddition
+                else
+                    range_end=${IP:2}
+                    ipSubtraction
+                    printf "%s" "    range $rangeStart $range_end;" >> "$currentScope"
+                    rangeStart=${IP:2}
+                    ipAddition
+                fi
+            ;;
+            "Z:"*)
+                range_start_octet_2="${range_end#*.*.}" && range_start_octet_2="${range_end%.*.*}"
+                range_start_octet_3="${range_end#*.*.}" && range_start_octet_3="${range_end%.*}"
+                printf -v range_start_no_dot_1 "%03d%03d" "${range_end#*.*.*.}" "$range_start_octet_2"
+                printf -v range_start_no_dot_2 "%03d%03d" "$range_start_octet_3" "${range_end#*.*.*.}"
+                range_start_no_dot="$range_start_no_dot_1$range_start_no_dot_2"
+
+                range_end=${IP:2}
+                range_end_octet_2="${range_end#*.*.}" && range_start_octet_2="${range_end%.*.*}"
+                range_end_octet_3="${range_end#*.*.}" && range_start_octet_3="${range_end%.*}"
+                printf -v range_end_no_dot "%03d%03d" "${range_end#*.*.*.}" "$range_end_octet_2"
+                printf -v range_end_no_dot "%03d%03d" "$range_end_octet_3" "${range_end#*.*.*.}"
+                range_end_no_dot="$range_end_no_dot_1$range_end_no_dot_2"
+                [[ $range_start_no_dot -le $range_end_no_dot ]] && \
+                    printf "%s" "    range $rangeStart $range_end;\\n}" >> "$currentScope"
+            ;;
+            esac
+        done
+    fi
     serviceRestart
 }
 
 #Menu functions go here - where Dialog will be invoked
 dialogMainMenu() {
-    while [[ $mainMenuResult != "Exit" ]]; do
+    while ! [[ -z "$mainMenuResult" ]]; do
+        mainMenuResult="1"
         exec 3>&1
         mainMenuResult=$(dialog --menu "Options" 0 0 0 \
         1 "Edit scope(s)" \
@@ -135,26 +131,24 @@ dialogMainMenu() {
         4 "View leases" \
         5 "About" \
         6 "Contribution" \
-        7 "View the entire license" \
-        "Exit" "" 2>&1 1>&3)
+        7 "View the entire license" 2>&1 1>&3)
         exec 3>&-
         case $mainMenuResult in
         1)
-            availableScopes=""
-            for file in $(dir $scopeFolder); do
-                availableScopes+="$file . "
+            available_scopes=""
+            for scope in $(dir $scopeFolder); do
+                available_scopes+="$scope . "
             done
-            availableScopes+="Cancel . "
             exec 3>&1
-            editChooseScope=$(dialog --menu "Which scope do you want to edit?" 0 0 0 $availableScopes 2>&1 1>&3)
+            editChooseScope=$(dialog --menu "Which scope do you want to edit?" 0 0 0 $available_scopes 2>&1 1>&3)
             exec 3>&-
             currentScope="$scopeFolder/$editChooseScope"
-            if ! [[ -z $editChooseScope || $editChooseScope == "Cancel" ]]; then
+            if ! [[ -z $editChooseScope ]]; then
                 if [[ $editChooseScope != "example" ]]; then
                     subnet=${editChooseScope%.*.*.*.*}
-                    subnet=${subnet/s/}
+                    subnet=${subnet/s}
                     netmask=${editChooseScope#*.*.*.*.}
-                    netmask=${netmask/n/}
+                    netmask=${netmask/n}
                     dialogEditMenu
                 else
                     menuItems=""
@@ -269,29 +263,25 @@ dialogMainMenu() {
 
 dialogEditMenu() {
 menuResult="."
-while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
+exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
+while ! [[ -z "$menuResult" ]]; do
     menuItems=""
     menuItem=""
     for key in "${hashKeys[@]}"; do
-        if ! grep -q "$key " "$currentScope"; then
-            menuItems+="${optionKeytoName[$key]} . "
-        else
-            menuItem="$(grep "$key " "$currentScope" | tr -s " ")"
-            menuItem="${menuItem# * * }"
-            menuItem="${menuItem//;}"
-            menuItem="${menuItem// /_}"
-            menuItems+="${optionKeytoName[$key]} $menuItem "
-        fi
+        menuItem="$(grep "$key " "$currentScope" | tr -s " ")"
+        menuItem="${menuItem# * * }"
+        menuItem="${menuItem//;}"
+        ! grep -q "$key " "$currentScope" && menuItem="."
+        menuItems+="${optionKeytoName[$key]} ${menuItem// /_} "
     done
-    menuItems+="Manage_excluded_IPs . "
-    if ! grep -q "X" "$exclusionsFolder/s$subnet.n$netmask"; then
-        menuItems+="Set_scope_range . "
+    if grep -q "X:" "$exclusionsFile" && grep -q "Z:" "$exclusionsFile"; then
+        menuItems+="Manage_excluded_IPs . "
+        startValue="$(grep "X:" "$exclusionsFile")"
+        endValue="$(grep "Z:" "$exclusionsFile")"
+        menuItems+="Change_scope_range Start:${startValue:2}_End:${endValue:2} "
     else
-        startValue="$(grep "X:" "$exclusionsFolder/s$subnet.n$netmask")"
-        endValue="$(grep "Z:" "$exclusionsFolder/s$subnet.n$netmask")"
-        menuItems+="Change_scope_range Start:${startValue#*:}_End:${endValue#*:} "
+        menuItems+="Set_scope_range . "
     fi
-    menuItems+="Back . "
     exec 3>&1
     menuResult=$(dialog --menu "Options" 0 0 0 $menuItems 2>&1 1>&3)
     exec 3>&-
@@ -315,60 +305,60 @@ while ! [[ $menuResult == "Back" || $menuResult == "" ]]; do
         inputBoxOrEditMode "$optionCode"
     ;;
     "Manage_excluded_IPs")
-        exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
-        if grep -q "X:" "$exclusionsFile" && grep -q "Z:" "$exclusionsFile"; then
+        exec 3>&1
+        excludeOrView=$(dialog --menu "Manage exclusion list" 0 0 0 "1" "Exclude an IP" "2" "View or edit the list" 2>&1 1>&3)
+        exec 3>&-
+        if [[ $excludeOrView == "1" ]]; then
             exec 3>&1
-            excludeOrView=$(dialog --menu "Manage exclusion list" 0 0 0 "1" "Exclude an IP" "2" "View or edit the list" 2>&1 1>&3)
+            excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
             exec 3>&-
-            if [[ $excludeOrView == "1" ]]; then
-                exec 3>&1
-                excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
-                exec 3>&-
-                exclusionAdd "$excluding"
+            if grep -q "$excluding" "$exclusionsFile"; then
+                dialog --msgbox "That IP is already excluded!" 0 0
             else
-                if grep -q "Y:" "$exclusionsFile"; then
-                    exclusionList=""
-                    for IP in $(grep "Y:" "$exclusionsFile" | tr -d "Y:"); do
-                        exclusionList+="$IP . off"
-                    done
-                    exec 3>&1
-                    removeIPList=($(dialog --checklist "View or remove IPs from exclusion" 0 0 0 $exclusionList 2>&1 1>&3))
-                    exec 3>&-
-                    if ! [[ -z "${removeIPList[*]}" ]]; then
-                        exec 3>&1
-                        removeIPYN=$(dialog --yesno "Are you sure you want to remove these IPs from exlcusion?: ${removeIPList[*]}" 0 0 2>&1 1>&3)
-                        removeIPYN=$?
-                        exec 3>&-
-                    fi
-                    if [[ $removeIPYN == "0" ]]; then
-                        for IP in ${removeIPList[*]}; do
-                            sed -i "/${IP}/d" "$exclusionsFile"
-                        done
-                    fi
-                    scopeGenerate
-                fi
+                echo "Y:$excluding" >> "$exclusionsFile"
+                scopeGenerate
             fi
         else
-            dialog --msgbox "Please set a scope range first" 0 0
+            if grep -q "Y:" "$exclusionsFile"; then
+                exclusionList=""
+                for IP in $(grep "Y:" "$exclusionsFile" | tr -d "Y:"); do
+                    exclusionList+="$IP . off"
+                done
+                exec 3>&1
+                removeIPList=($(dialog --checklist "View or remove IPs from exclusion" 0 0 0 $exclusionList 2>&1 1>&3))
+                exec 3>&-
+                if ! [[ -z "${removeIPList[*]}" ]]; then
+                    exec 3>&1
+                    removeIPYN=$(dialog --yesno "Are you sure you want to remove these IPs from exlcusion?: ${removeIPList[*]}" 0 0 2>&1 1>&3)
+                    removeIPYN=$?
+                    exec 3>&-
+                fi
+                if [[ $removeIPYN == "0" ]]; then
+                    for IP in ${removeIPList[*]}; do
+                        sed -i "/${IP}/d" "$exclusionsFile"
+                    done
+                fi
+                scopeGenerate
+            fi
         fi
     ;;
     "Set_scope_range"|"Change_scope_range")
         exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
         exec 3>&1
-        scopeRange=$(dialog --inputbox "What range do you want? Example: 192.168.1.1 192.168.1.255. Leave empty to delete." 0 0 2>&1 1>&3)
+        scope_range=$(dialog --inputbox "What range do you want? Example: 192.168.1.1 192.168.1.255. Leave empty to delete." 0 0 2>&1 1>&3)
         exec 3>&-
-        if ! [[ -z $scopeRange ]]; then
+        if ! [[ -z $scope_range ]]; then
             if grep -q "X:" "$exclusionsFile"; then
-                replaceLine=${scopeRange% *}
+                replaceLine=${scope_range% *}
                 sed -i "/X/s|.*|X:${replaceLine}|" "$exclusionsFile"
             else
-                echo "X:${scopeRange% *}" >> "$exclusionsFile"
+                echo "X:${scope_range% *}" >> "$exclusionsFile"
             fi
             if grep -q "Z:" "$exclusionsFile"; then
-                replaceLine=${scopeRange#* }
+                replaceLine=${scope_range#* }
                 sed -i "/Z/s_.*_Z:${replaceLine}_" "$exclusionsFile"
             else
-                echo "Z:${scopeRange#* }" >> "$exclusionsFile"
+                echo "Z:${scope_range#* }" >> "$exclusionsFile"
             fi
             scopeGenerate
         else
@@ -404,38 +394,35 @@ dialogInputbox() {
 }
 
 editMenuMode() {
-    if ! [[ $optionMode == "multi" ]]; then
-        optionEditModeMenuItems="1 Edit 2 Delete 3 Cancel"
-    else
-        optionEditModeMenuItems="1 Edit 2 Add_an_option 3 Delete 4 Cancel"
-    fi
+    option_edit_mode_items="1 Edit 2 Add_an_option 3 Delete"
+    ! [[ $optionMode == "multi" ]] && option_edit_mode_items="1 Edit 2 Delete"
     exec 3>&1
-    optionEditMode=$(dialog --menu "What do you want to do?" 0 0 0 $optionEditModeMenuItems 2>&1 1>&3)
+    option_edit_mode=$(dialog --menu "What do you want to do?" 0 0 0 $option_edit_mode_items 2>&1 1>&3)
     exec 3>&-
-    if [[ $optionEditMode == "1" ]]; then
-        inputInit="$(grep "$optionCode " "$currentScope" | tr -s " ")"
-        inputInit="${inputInit#* * }"
-        inputInit="${inputInit//;}"
+    if [[ $option_edit_mode == "1" ]]; then
+        input_init="$(grep "$optionCode " "$currentScope")"
+        input_init="${input_init//    }"
+        input_init="${input_init#* * }"
+        input_init="${input_init//;}"
         exec 3>&1
-        optionEditInput=$(dialog --inputbox "Edit ${optionName,,}" 0 0 "$inputInit" 2>&1 1>&3)
+        option_edit_input=$(dialog --inputbox "Editing ${optionName,,}" 0 0 "$input_init" 2>&1 1>&3)
         exec 3>&-
-        sed -i "/${optionCode} /s_.*_    option ${optionCode} ${optionEditInput};_" "$currentScope"
-    elif [[ $optionEditMode == "2" && $optionMode == "multi" ]]; then
+        sed -i "/${optionCode} /s_.*_    option ${optionCode} ${option_edit_input};_" "$currentScope"
+    elif [[ $option_edit_mode == "2" && $optionMode == "multi" ]]; then
         dialogInputbox
-    elif [[ $optionEditMode == "2" ]] || [[ $optionEditMode == "3" && $optionMode == "multi" ]]; then
+    elif [[ $option_edit_mode == "2" ]] || [[ $option_edit_mode == "3" ]]; then
         exec 3>&1
-        optionEditInput=$(dialog --yesno "Are you sure you want to delete $optionCode?" 0 0 2>&1 1>&3)
-        optionEditInput=$?
+        confirm_option_delete=$(dialog --yesno "Are you sure you want to delete $optionCode?" 0 0 2>&1 1>&3)
+        confirm_option_delete=$?
         exec 3>&-
-        if [[ $optionEditInput -eq "0" ]]; then
+        [[ $confirm_option_delete -eq "0" ]] && \
             sed -i "/${optionCode} /d" "$currentScope"
-        fi
     fi
 }
 
-if [[ $1 == "--uninstall" || $1 == "-u" ]]; then
-    rm -rf /opt/dhcpDialog
-    rm /usr/bin/dhcpDialog
-else
-    dialogMainMenu
-fi
+#if [[ $1 == "--uninstall" || $1 == "-u" ]]; then
+#    rm -rf /opt/dhcpDialog
+#    rm /usr/bin/dhcpDialog
+#else
+#    dialogMainMenu
+#fi

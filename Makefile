@@ -16,9 +16,7 @@ install:
 	@cp -r -p exclusions $(DESTDIR)$(OPTDIR)/exclusions
 	@cp -r -p dhcpScopes $(DESTDIR)$(OPTDIR)/dhcpScopes
 	@cp -p servers.list $(DESTDIR)$(OPTDIR)/servers.list
-	@touch dhcpd.conf
 	@cp -p dhcpd.conf $(DESTDIR)$(OPTDIR)/dhcpd.conf
-	@touch active.leases
 	@cp -p active.leases $(DESTDIR)$(OPTDIR)/active.leases
 	@cp -p dhcpDialog.sh $(DESTDIR)$(BINDIR)/dhcpDialog
 	@chmod 755 $(DESTDIR)$(BINDIR)/dhcpDialog
