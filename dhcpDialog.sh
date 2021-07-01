@@ -46,8 +46,8 @@ ipAddition() {
 }
 
 ipSubtraction() {
-    range_end_octet_2="${range_end#*.}" && range_start_octet_2="${range_end%.*.*}"
-    range_end_octet_3="${range_end#*.*.}" && range_start_octet_3="${range_end%.*}"
+    range_end_octet_2="${range_end#*.}" && range_end_octet_2="${range_end%.*.*}"
+    range_end_octet_3="${range_end#*.*.}" && range_end_octet_3="${range_end%.*}"
     range_end="${range_end%.*}.$(( ${range_end#*.*.*.} - 1 ))"
     [[ ${range_end#*.*.*.} -le -1 ]] && \
         range_end="${range_end%.*.*}.$(( range_end_octet_3 - 1 )).255"
@@ -63,14 +63,6 @@ inputBoxOrEditMode() {
     grep -q "$1 " "$currentScope" && \
         editMenuMode && return 0
     dialogInputbox
-}
-
-exclusionAdd() {
-    exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
-    grep -q "$1" "$exclusionsFile" && \
-        dialog --msgbox "That IP is already excluded!" 0 0 && return 0
-    echo "Y:$1" >> "$exclusionsFile"
-    scopeGenerate
 }
 
 scopeGenerate() {            
@@ -142,45 +134,20 @@ dialogMainMenu() {
             exec 3>&1
             editChooseScope=$(dialog --menu "Which scope do you want to edit?" 0 0 0 $available_scopes 2>&1 1>&3)
             exec 3>&-
-            currentScope="$scopeFolder/$editChooseScope"
-            if ! [[ -z $editChooseScope ]]; then
-                if [[ $editChooseScope != "example" ]]; then
-                    subnet=${editChooseScope%.*.*.*.*}
-                    subnet=${subnet/s}
-                    netmask=${editChooseScope#*.*.*.*.}
-                    netmask=${netmask/n}
-                    dialogEditMenu
-                else
-                    menuItems=""
-                    for key in "${hashKeys[@]}"; do
-                        if ! grep -q "$key " "$currentScope"; then
-                            menuItems+="${optionKeytoName[$key]} . "
-                        else
-                            menuItem="$(grep "$key " "$currentScope" | tr -s " ")"
-                            menuItem="${menuItem# * * }"
-                            menuItem="${menuItem//;}"
-                            menuItem="${menuItem// /_}"
-                            menuItems+="${optionKeytoName[$key]} $menuItem "
-                        fi
-                    done
-                    menuItems+="Exclude_an_IP . "
-                    menuItems+="Set_scope_range . "
-                    menuItems+="Back . "
-                    dialog --menu "Example: the menu buttons do nothing" 0 0 0 $menuItems
-                fi
+            if ! [[ -z "$editChooseScope" ]]; then
+                subnet=${editChooseScope%s_*}
+                netmask=${editChooseScope#*_n}
+                dialogEditMenu
             fi
         ;;
         2)
             exec 3>&1
             networkResult=$(dialog --inputbox "Which network do you want to add? Example: 192.168.1.0 255.255.255.0" 0 0 2>&1 1>&3)
             exec 3>&-
-            if ! [[ -z $networkResult ]]; then
+            if ! [[ -z "$networkResult" ]]; then
                 subnet=${networkResult% *}
                 netmask=${networkResult#* }
-                currentScope="$scopeFolder/s$subnet.n$netmask"
-                echo -e "subnet $subnet netmask $netmask{\\n}" > "$currentScope"
-                touch "$exclusionsFolder/s$subnet.n$netmask"
-                dialogEditMenu
+                dialogEditMenu ","
             fi
         ;;
         3)
@@ -262,8 +229,11 @@ dialogMainMenu() {
 }
 
 dialogEditMenu() {
-menuResult="."
-exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
+menuResult=","
+currentScope="$scopeFolder/${subnet}s_n${netmask}"
+printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope"
+touch "$exclusionsFolder/${subnet}s_n${netmask}"
+exclusionsFile="$exclusionsFolder/${subnet}s_n${netmask}"
 while ! [[ -z "$menuResult" ]]; do
     menuItems=""
     menuItem=""
@@ -312,17 +282,14 @@ while ! [[ -z "$menuResult" ]]; do
             exec 3>&1
             excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
             exec 3>&-
-            if grep -q "$excluding" "$exclusionsFile"; then
-                dialog --msgbox "That IP is already excluded!" 0 0
-            else
-                echo "Y:$excluding" >> "$exclusionsFile"
-                scopeGenerate
-            fi
+            grep -q "$excluding" "$exclusionsFile" && \
+                dialog --msgbox "That IP is already excluded!" 0 0 && return 0
+            echo "Y:$excluding" >> "$exclusionsFile"
         else
             if grep -q "Y:" "$exclusionsFile"; then
                 exclusionList=""
-                for IP in $(grep "Y:" "$exclusionsFile" | tr -d "Y:"); do
-                    exclusionList+="$IP . off"
+                for IP in $(grep "Y:" "$exclusionsFile"); do
+                    exclusionList+="${IP:2} . off"
                 done
                 exec 3>&1
                 removeIPList=($(dialog --checklist "View or remove IPs from exclusion" 0 0 0 $exclusionList 2>&1 1>&3))
@@ -338,9 +305,9 @@ while ! [[ -z "$menuResult" ]]; do
                         sed -i "/${IP}/d" "$exclusionsFile"
                     done
                 fi
-                scopeGenerate
             fi
         fi
+        scopeGenerate
     ;;
     "Set_scope_range"|"Change_scope_range")
         exclusionsFile="$exclusionsFolder/s$subnet.n$netmask"
