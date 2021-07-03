@@ -200,6 +200,13 @@ dialog_main_menu() {
 
 dialog_servers() {
     for server in $(grep -n "server:" "$servers_list"); do
+        server_line=""
+        server_line=""
+        hostname="${server#*:}"
+        state="${server#*;}"
+        [[ ${server#*;} == "local" ]] && \
+            server_menu_list+=("${hostname%;*} $state") && \
+            server_menu_list+=("${hostname%;*} $state")
     done
 }
 

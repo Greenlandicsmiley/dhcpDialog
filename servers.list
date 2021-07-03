@@ -2,12 +2,10 @@
 ##Please note that if the master server is breached, then malicious actors may get access to the slave nodes.
 
 ##Local example/master node:
-#server:[hostname]:local
-#[user]@[ip]
-#key:[ssh key location]
+#server:[hostname];local
 
 ##Remote example/slave nodes:
-#server:[hostname]:remote
+#server:[hostname];remote
 #[user]@[ip]
 #key:[ssh key location]
 
