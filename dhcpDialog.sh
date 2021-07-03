@@ -13,15 +13,15 @@ CONTRIBUTION="$optFolder/CONTRIBUTING.md"
 ABOUT="$optFolder/ABOUT"
 leases_file="leasesFileReplace"
 active_leases_file="$optFolder/active.leases"
-#serversFile="$optFolder/servers.list"
+servers_list="$optFolder/servers.list"
 
 #Arrays
 hashKeys=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
 
 declare -A optionKeytoName
-optionKeytoName=(["subnet-mask"]="Subnet_mask" ["routers"]="Router(s)" ["domain-name-servers"]="DNS_server(s)" ["domain-name"]="Domain_name" ["broadcast-address"]="Broadcast_address" ["static-routes"]="Static_route(s)" ["ntp-servers"]="NTP_server(s)" ["tftp-server-name"]="TFTP_server(s)" ["bootfile-name"]="Boot_file_name")
+optionKeytoName=(["subnet-mask"]="Subnet mask" ["routers"]="Router(s)" ["domain-name-servers"]="DNS server(s)" ["domain-name"]="Domain name" ["broadcast-address"]="Broadcast address" ["static-routes"]="Static route(s)" ["ntp-servers"]="NTP server(s)" ["tftp-server-name"]="TFTP server(s)" ["bootfile-name"]="Boot file name")
 declare -A optionNametoKey
-optionNametoKey=(["Subnet_mask"]="subnet-mask" ["Router(s)"]="routers" ["DNS_server(s)"]="domain-name-servers" ["Domain_name"]="domain-name" ["Broadcast_address"]="broadcast-address" ["Static_route(s)"]="static-routes" ["NTP_server(s)"]="ntp-servers" ["TFTP_server(s)"]="tftp-server-name" ["Boot_file_name"]="bootfile-name")
+optionNametoKey=(["Subnet mask"]="subnet-mask" ["Router(s)"]="routers" ["DNS server(s)"]="domain-name-servers" ["Domain name"]="domain-name" ["Broadcast address"]="broadcast-address" ["Static route(s)"]="static-routes" ["NTP server(s)"]="ntp-servers" ["TFTP server(s)"]="tftp-server-name" ["Boot file name"]="bootfile-name")
 
 #Non-menu functions go here
 serviceRestart() {
@@ -93,11 +93,11 @@ scopeGenerate() {
 }
 
 #Menu functions go here - where Dialog commands will be invoked
-dialogMainMenu() {
-    mainMenuResult=","
-    while ! [[ -z "$mainMenuResult" ]]; do
+dialog_main_menu() {
+    main_menu=","
+    while ! [[ -z "$main_menu" ]]; do
         exec 3>&1
-        mainMenuResult=$(dialog --menu "Options" 0 0 0 \
+        main_menu=$(dialog --menu "Options" 0 0 0 \
         1 "Edit scope(s)" \
         2 "Add scope(s)" \
         3 "Delete scope(s)" \
@@ -106,7 +106,7 @@ dialogMainMenu() {
         6 "Contribution" \
         7 "View the entire license" 2>&1 1>&3)
         exec 3>&-
-        case $mainMenuResult in
+        case $main_menu in
         1)
             [[ -z "$(dir $scopeFolder)" ]] && \
                 dialog --msgbox "Please add a scope first." 0 0 && continue
@@ -125,12 +125,12 @@ dialogMainMenu() {
         ;;
         2)
             exec 3>&1
-            networkResult=$(dialog --inputbox "Which network do you want to add? Examples: 192.168.1.0/24 or 10.1.1.0 255.255.0.0" 0 0 2>&1 1>&3)
+            networkResult=$(dialog --inputbox "Which network do you want to add? Examples: 192.168.1.0/24" 0 0 2>&1 1>&3)
             exec 3>&-
             [[ -z "$networkResult" ]] && continue
 
-            subnet=${networkResult% *}
-            netmask=${networkResult#* }
+            subnet=${networkResult%/*}
+            netmask=${networkResult#*/}
             dialogEditMenu ","
         ;;
         3)
@@ -146,7 +146,7 @@ dialogMainMenu() {
 
             [[ -z "$scopeDelete" ]] && continue
             exec 3>&1
-            scopeDeleteYN=$(dialog --yesno "Are you sure you want to delete these scopes?: ${scopeDelete[*]}" 0 0 2>&1 1>&3)
+            scopeDeleteYN=$(dialog --yesno "Are you sure you want to delete these scopes?: $scopeDelete" 0 0 2>&1 1>&3)
             scopeDeleteYN=$?
             exec 3>&-
 
@@ -198,41 +198,82 @@ dialogMainMenu() {
     done
 }
 
+dialog_servers() {
+    for server in $(grep -n "server:" "$servers_list"); do
+    done
+}
+
 dialogEditMenu() {
-    menuResult=","
+    option_menu=","
     currentScope="$scopeFolder/${subnet}s_n${netmask}"
     exclusionsFile="$exclusionsFolder/${subnet}s_n${netmask}"
+    cidr_notation="${netmask}"
     ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope" && \
         touch "$exclusionsFolder/${subnet}s_n${netmask}"
-    while ! [[ -z "$menuResult" ]]; do
+    while ! [[ -z "$option_menu" ]]; do
         x_line="$(grep "X:" "$exclusionsFile")"
         z_line="$(grep "Z:" "$exclusionsFile")"
         for key in "${hashKeys[@]}"; do
             option_value="$(grep "$key " "$currentScope")"
             option_value="${option_value#* }"
             [[ -z "$option_value" ]] && option_value="."
-            menuItems+="${optionKeytoName[$key]} ${option_value//;} "
+            menuItems+=("${optionKeytoName[$key]}")
+            menuItems+=("${option_value//;}")
         done
         if ! [[ -z "$x_line" || -z "$x_line" ]]; then
-            menuItems+="Manage_excluded_IPs . "
-            menuItems+="Change_scope_range ${x_line:2}-${z_line:2} "
+            menuItems+=("View dhcp leases")
+            menuItems+=(".")
+            menuItems+=("Manage excluded IPs")
+            menuItems+=(".")
+            menuItems+=("Change scope range")
+            menuItems+=("${x_line:2}-${z_line:2}")
         else
-            menuItems+="Set_scope_range . "
+            menuItems+=("Set scope range")
+            menuItems+=(".")
         fi
         exec 3>&1
-        menuResult=$(dialog --menu "Options" 0 0 0 $menuItems 2>&1 1>&3)
+        option_menu=$(dialog --menu "Options" 0 0 0 "${menuItems[@]}" 2>&1 1>&3)
         exec 3>&-
-        optionName="${menuResult//_/ }"
-        optionCode="${optionNametoKey[$menuResult]}"
+        optionName="$option_menu"
+        optionCode="${optionNametoKey[$option_menu]}"
         optionMode=""
-        case $menuResult in
-        "Router(s)"|"DNS_server(s)"|"Static_route(s)"|"NTP_server(s)")
+        case $option_menu in
+        "Router(s)"|"DNS server(s)"|"Static route(s)"|"NTP server(s)")
             optionMode="multi"
         ;;
-        "Domain_name"|"TFTP_server_name"|"Bootfile_name")
+        "Domain name"|"TFTP server name"|"Bootfile name")
             optionMode="quotes"
         ;;
-        "Manage_excluded_IPs")
+        "View dhcp leases")
+            dhcp_leases=$(grep -n "lease.*{" $leases_file)
+            for lease in ${dhcp_leases// /_}; do
+                lease_ip="${lease% *}"
+                lease_ip="${lease_ip#*: }"
+                ! [[ "${lease//_/ }" == "$(grep -n "${lease//_/ }" "$leases_file" | tail -n 1)" ]] && continue
+                for octet in 
+                starting_line=${lease#:*}
+                ending_line=$(( starting_line + 1 ))
+                until [[ "$(sed -n "${ending_line}p" "$leases_file")" == "}" ]]; do
+                    ending_line=$(( ending_line + 1 ))
+                done
+                for active_lease in $(grep -n "binding state active" "$leases_file"); do
+                    ! [[ ${active_lease%:*} -gt $starting_line && ${active_lease%:*} -lt $ending_line ]] && continue
+                    lease_ip_infos+="${starting_line}:${lease_ip}:${ending_line} "
+                    lease_menu_items+="$lease_ip . "
+                done
+            done
+            exec 3>&1
+            lease_menu=$(dialog --menu "View active leases" 0 0 0 $lease_menu_items 2>&1 1>&3)
+            exec 3>&-
+            for lease in $lease_ip_infos; do
+                lease_ip="${lease#*:}"
+                starting_line="${lease%:*:*}"
+                ending_line="${lease#*:*:}"
+                [[ "${lease_ip%:*}" == "$lease_menu" ]] && break
+            done
+            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $active_leases_file)" 0 0 
+        ;;
+        "Manage excluded IPs")
             exec 3>&1
             excludeOrView=$(dialog --menu "Manage exclusion list" 0 0 0 "1" "Exclude an IP" "2" "View or edit the list" 2>&1 1>&3)
             exec 3>&-
@@ -276,19 +317,19 @@ dialogEditMenu() {
             sed -i "/Z:/s_.*_Z:${scope_range#* }_" "$exclusionsFile"
         ;;
         esac
-        ! [[ $menuResult =~ ^("Manage_excluded_IPs"|"Set_scope_range"|"Change_scope_range")$ ]] && \
-            edit_option_menu
+        ! [[ $option_menu =~ ^("Manage_excluded_IPs"|"Set_scope_range"|"Change_scope_range")$ ]] && \
+            dialog_edit_menu
         scopeGenerate
         serviceRestart
     done
 }
 
-edit_option_menu() {
+dialog_edit_menu() {
     exec 3>&1
-    option_edit_mode=$(dialog --menu "What do you want to do?" 0 0 0 "1" "Set value" "2" "Delete" 2>&1 1>&3)
+    edit_menu=$(dialog --menu "What do you want to do?" 0 0 0 "1" "Set value" "2" "Delete" 2>&1 1>&3)
     exec 3>&-
     input_init=""
-    if [[ $option_edit_mode == "1" ]]; then
+    if [[ $edit_menu == "1" ]]; then
         input_init="$(grep "$optionCode " "$currentScope")"
         input_init="${input_init#* }"
         input_init="${input_init//;}"
@@ -298,7 +339,7 @@ edit_option_menu() {
         ! [[ $option_mode == "multi" ]] && option_edit_input="${option_edit_input//,*}"
         [[ $option_mode == "quotes" ]] && option_edit_input="\"${option_edit_input}\""
         sed -i "/${optionCode} /s_.*_${optionCode} ${option_edit_input};_" "$currentScope"
-    elif [[ $option_edit_mode == "2" ]]; then
+    elif [[ $edit_menu == "2" ]]; then
         exec 3>&1
         confirm_option_delete=$(dialog --yesno "Are you sure you want to delete $optionCode?" 0 0 2>&1 1>&3)
         confirm_option_delete=$?

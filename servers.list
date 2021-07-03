@@ -1,9 +1,14 @@
-##Put your servers here, this is currently reserved for a future feature
+##Put your servers here
+##Please note that if the master server is breached, then malicious actors may get access to the slave nodes.
 
+##Local example/master node:
+#server:[hostname]:local
+#[user]@[ip]
+#key:[ssh key location]
 
-##Local example (If you are running this script on a server acting as a master for other servers, or on a server controlling its own scopes):
-##10.1.0.10 local
+##Remote example/slave nodes:
+#server:[hostname]:remote
+#[user]@[ip]
+#key:[ssh key location]
 
-
-##Remote example (Other servers that are not the master server, or if you are running this on your own machine):
-##10.2.0.10 remote
+##Put them under this comment
