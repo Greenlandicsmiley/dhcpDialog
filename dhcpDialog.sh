@@ -1,6 +1,6 @@
 #!/bin/bash
 
-dialog --msgbox "Just a heads up, I'm releasing a revised installation system. Backup your scopes and prepare to migrate to v2.0 ;). Script code changes are minimal." 0 0
+#dialog --msgbox "Just a heads up, I'm releasing a revised installation system. Backup your scopes and prepare to migrate to v2.0 ;). Script code changes are minimal." 0 0
 
 serviceRestartTrue=0
 if [[ $serviceRestartTrue -eq 0 ]]; then
