@@ -4,15 +4,15 @@ dialog --msgbox "DEVELOPMENT ONLY" 0 0
 
 #File paths
 optFolder="/opt/dhcpDialog"
+server_folder="/srv/dhcpDialog"
+
 
 scopeFolder="$optFolder/dhcpScopes"
 exclusionsFolder="$optFolder/exclusions"
 dhcpd_conf_file="$optFolder/dhcpd.conf"
 LICENSE="$optFolder/LICENSE"
-CONTRIBUTION="$optFolder/CONTRIBUTING.md"
 ABOUT="$optFolder/ABOUT"
 leases_file="leasesFileReplace"
-active_leases_file="$optFolder/active.leases"
 servers_list="$optFolder/servers.list"
 
 #Arrays
@@ -78,10 +78,12 @@ scopeGenerate() {
             ipAddition
         ;;
         "Z:")
+            unset range_start_no_dot
             for octet in ${rangeStart//./ }; do
                 range_start_no_dot+="$(printf "%03d" "$octet")"
             done
             range_end=${IP:2}
+            unset range_end_no_dot
             for octet in ${range_end//./ }; do
                 range_end_no_dot+="$(printf "%03d" "$octet")"
             done
@@ -98,13 +100,63 @@ dialog_main_menu() {
     while ! [[ -z "$main_menu" ]]; do
         exec 3>&1
         main_menu=$(dialog --menu "Options" 0 0 0 \
+        1 "Servers" \
+        2 "About" \
+        3 "View the entire license" 2>&1 1>&3)
+        exec 3>&-
+        case $main_menu in
+        1)
+            dialog --textbox $ABOUT 0 0
+        ;;
+        2)
+            dialog --textbox $ABOUT 0 0
+        ;;
+        3)
+            dialog --textbox $LICENSE 0 0
+        ;;
+        esac
+    done
+}
+
+dialog_main_menu() {
+    while ! [[ -z "$main_menu" ]]; do
+        unset main_menu_list
+        for server in $(dir $server_folder); do
+            server_conf_file="$server_folder/$server/server.conf"
+            server_role="$(grep "Role:" "$server_conf_file")"
+            server_hostname="$(grep "Hostname:" "$server_conf_file")"
+            server_address="$(grep "Address:" "$server_conf_file")"
+            main_menu_list+=("${server_hostname} ${server_role}" "${server_address}")
+        done
+        main_menu_list+=("Add server" "." "About" "." "License" ".")
+        exec 3>&1
+        main_menu=$(dialog --cancel-label "Back" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)
+        exec 3>&-
+        case $main_menu in
+        "Add server")
+            #
+            continue
+        ;;
+        "About")
+            dialog --textbox $ABOUT 0 0
+            continue
+        ;;
+        "License")
+            dialog --textbox $LICENSE 0 0
+            continue
+        ;;
+        esac
+        leases_file="$srv_folder/${server_menu% *}/dhcpd.leases"
+        dhcpd_conf_file="$srv_folder/${server_menu% *}/dhcpd.conf"
+        scopeFolder="$srv_folder/${server_menu% *}/dhcpScopes"
+        exclusionsFolder="$srv_folder/${server_menu% *}/exclusions"
+    done
+    while ! [[ -z "$main_menu" ]]; do
+        exec 3>&1
+        main_menu=$(dialog --menu "Options" 0 0 0 \
         1 "Edit scope(s)" \
         2 "Add scope(s)" \
-        3 "Delete scope(s)" \
-        4 "View leases" \
-        5 "About" \
-        6 "Contribution" \
-        7 "View the entire license" 2>&1 1>&3)
+        3 "Delete scope(s)" 2>&1 1>&3)
         exec 3>&-
         case $main_menu in
         1)
@@ -157,56 +209,7 @@ dialog_main_menu() {
             done
             serviceRestart
         ;;
-        4)
-            dhcp_leases=$(grep -n "lease.*{" $leases_file)
-            for lease in ${dhcp_leases// /_}; do
-                ! [[ "${lease//_/ }" == "$(grep -n "${lease//_/ }" "$leases_file" | tail -n 1)" ]] && continue
-                starting_line=${lease#:*}
-                ending_line=$(( starting_line + 1 ))
-                until [[ "$(sed -n "${ending_line}p" "$leases_file")" == "}" ]]; do
-                    ending_line=$(( ending_line + 1 ))
-                done
-                for active_lease in $(grep -n "binding state active" "$leases_file"); do
-                    ! [[ ${active_lease%:*} -gt $starting_line && ${active_lease%:*} -lt $ending_line ]] && continue
-                    lease_ip="${lease% *}"
-                    lease_ip="${lease_ip#*: }"
-                    lease_ip_infos+="${starting_line}:${lease_ip}:${ending_line} "
-                    lease_menu_items+="$lease_ip . "
-                done
-            done
-            exec 3>&1
-            lease_menu=$(dialog --menu "View active leases" 0 0 0 $lease_menu_items 2>&1 1>&3)
-            exec 3>&-
-            for lease in $lease_ip_infos; do
-                lease_ip="${lease#*:}"
-                starting_line="${lease%:*:*}"
-                ending_line="${lease#*:*:}"
-                [[ "${lease_ip%:*}" == "$lease_menu" ]] && break
-            done
-            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $active_leases_file)" 0 0
-        ;;
-        5)
-            dialog --textbox $ABOUT 0 0
-        ;;
-        6)
-            dialog --textbox $CONTRIBUTION 0 0
-        ;;
-        7)
-            dialog --textbox $LICENSE 0 0
-        ;;
         esac
-    done
-}
-
-dialog_servers() {
-    for server in $(grep -n "server:" "$servers_list"); do
-        server_line=""
-        server_line=""
-        hostname="${server#*:}"
-        state="${server#*;}"
-        [[ ${server#*;} == "local" ]] && \
-            server_menu_list+=("${hostname%;*} $state") && \
-            server_menu_list+=("${hostname%;*} $state")
     done
 }
 
@@ -278,7 +281,7 @@ dialogEditMenu() {
                 ending_line="${lease#*:*:}"
                 [[ "${lease_ip%:*}" == "$lease_menu" ]] && break
             done
-            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $active_leases_file)" 0 0 
+            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $leases_file)" 0 0 
         ;;
         "Manage excluded IPs")
             exec 3>&1

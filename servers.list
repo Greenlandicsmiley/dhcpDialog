@@ -1,12 +1,8 @@
-##Put your servers here
+##Configuration template
 ##Please note that if the master server is breached, then malicious actors may get access to the slave nodes.
 
-##Local example/master node:
-#server:[hostname];local
-
-##Remote example/slave nodes:
-#server:[hostname];remote
-#[user]@[ip]
-#key:[ssh key location]
-
-##Put them under this comment
+#Role:[server/client]
+#Hostname:[hostname]
+#Address:[ip]
+#User:[user]
+#Key:[ssh key location]
