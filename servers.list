@@ -1,8 +1,8 @@
 ##Configuration template
 ##Please note that if the master server is breached, then malicious actors may get access to the slave nodes.
 
-#Role:[server/client]
-#Hostname:[hostname]
+#Role:[master/slave]
+#Name:[hostname]
 #Address:[ip]
 #User:[user]
 #Key:[ssh key location]

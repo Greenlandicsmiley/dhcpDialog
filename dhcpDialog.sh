@@ -7,7 +7,7 @@ optFolder="/opt/dhcpDialog"
 server_folder="/srv/dhcpDialog"
 
 
-scopeFolder="$optFolder/dhcpScopes"
+scope_folder="$optFolder/dhcpScopes"
 exclusionsFolder="$optFolder/exclusions"
 dhcpd_conf_file="$optFolder/dhcpd.conf"
 LICENSE="$optFolder/LICENSE"
@@ -25,7 +25,7 @@ optionNametoKey=(["Subnet mask"]="subnet-mask" ["Router(s)"]="routers" ["DNS ser
 
 #Non-menu functions go here
 serviceRestart() {
-    cat $scopeFolder/s* > $dhcpd_conf_file
+    cat $scope_folder/s* > $dhcpd_conf_file
     #service
 }
 
@@ -96,46 +96,25 @@ scopeGenerate() {
 
 #Menu functions go here - where Dialog commands will be invoked
 dialog_main_menu() {
-    main_menu=","
-    while ! [[ -z "$main_menu" ]]; do
-        exec 3>&1
-        main_menu=$(dialog --menu "Options" 0 0 0 \
-        1 "Servers" \
-        2 "About" \
-        3 "View the entire license" 2>&1 1>&3)
-        exec 3>&-
-        case $main_menu in
-        1)
-            dialog --textbox $ABOUT 0 0
-        ;;
-        2)
-            dialog --textbox $ABOUT 0 0
-        ;;
-        3)
-            dialog --textbox $LICENSE 0 0
-        ;;
-        esac
-    done
-}
-
-dialog_main_menu() {
     while ! [[ -z "$main_menu" ]]; do
         unset main_menu_list
+        main_menu_list+=("1" "About" "2" "License" "3" "Add server")
         for server in $(dir $server_folder); do
             server_conf_file="$server_folder/$server/server.conf"
             server_role="$(grep "Role:" "$server_conf_file")"
-            server_hostname="$(grep "Hostname:" "$server_conf_file")"
+            server_name="$(grep "Name:" "$server_conf_file")"
             server_address="$(grep "Address:" "$server_conf_file")"
-            main_menu_list+=("${server_hostname} ${server_role}" "${server_address}")
+            main_menu_list+=("${server_name} ${server_role}" "${server_address}")
         done
-        main_menu_list+=("Add server" "." "About" "." "License" ".")
         exec 3>&1
-        main_menu=$(dialog --cancel-label "Back" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)
+        main_menu=$(dialog --cancel-label "Exit" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)
         exec 3>&-
         case $main_menu in
         "Add server")
-            #
-            continue
+            exec 3>&1
+            new_server_name="$(dialog --inputbox "Name of the server" 0 0 )"
+            exec 3>&-
+            mkdir "$server_folder/${new_server_name// /_}"
         ;;
         "About")
             dialog --textbox $ABOUT 0 0
@@ -146,28 +125,34 @@ dialog_main_menu() {
             continue
         ;;
         esac
-        leases_file="$srv_folder/${server_menu% *}/dhcpd.leases"
-        dhcpd_conf_file="$srv_folder/${server_menu% *}/dhcpd.conf"
-        scopeFolder="$srv_folder/${server_menu% *}/dhcpScopes"
-        exclusionsFolder="$srv_folder/${server_menu% *}/exclusions"
+        current_server="${server_menu% *}"
+        current_server="${current_server#* }"
+        leases_file="$srv_folder/${current_server}/dhcpd.leases"
+        dhcpd_conf_file="$srv_folder/${current_server}/dhcpd.conf"
+        scope_folder="$srv_folder/${current_server}/dhcpScopes"
+        exclusionsFolder="$srv_folder/${current_server}/exclusions"
     done
-    while ! [[ -z "$main_menu" ]]; do
+}
+
+dialog_scope_menu() {
+    while ! [[ -z "$scope_menu" ]]; do
+        unset scope_menu_items
+        scope_menu_items+=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope")
+        current_scope="$(grep "Default Scope:" "$server_folder/$current_server/server.conf")"
+        current_scope="${current_scope#*:}"
         exec 3>&1
-        main_menu=$(dialog --menu "Options" 0 0 0 \
-        1 "Edit scope(s)" \
-        2 "Add scope(s)" \
-        3 "Delete scope(s)" 2>&1 1>&3)
+        scope_menu=$(dialog --menu "Current scope: ${current_scope}\\nCurrent server: ${current_server}" 0 0 0 "${scope_menu_items[@]}" 2>&1 1>&3)
         exec 3>&-
-        case $main_menu in
+        case $scope_menu in
         1)
-            [[ -z "$(dir $scopeFolder)" ]] && \
+            [[ -z "$(dir $scope_folder)" ]] && \
                 dialog --msgbox "Please add a scope first." 0 0 && continue
             available_scopes=""
-            for scope in $(dir $scopeFolder); do
+            for scope in $(dir $scope_folder); do
                 available_scopes+="$scope . "
             done
             exec 3>&1
-            editChooseScope=$(dialog --menu "Which network do you want to edit?" 0 0 0 $available_scopes 2>&1 1>&3)
+            editChooseScope=$(dialog --menu "Choose a scope to change to" 0 0 0 $available_scopes 2>&1 1>&3)
             exec 3>&-
             [[ -z "$editChooseScope" ]] && continue
 
@@ -177,7 +162,7 @@ dialog_main_menu() {
         ;;
         2)
             exec 3>&1
-            networkResult=$(dialog --inputbox "Which network do you want to add? Examples: 192.168.1.0/24" 0 0 2>&1 1>&3)
+            networkResult=$(dialog --inputbox "Add a scope to ? Examples: 192.168.1.0/24" 0 0 2>&1 1>&3)
             exec 3>&-
             [[ -z "$networkResult" ]] && continue
 
@@ -186,10 +171,10 @@ dialog_main_menu() {
             dialogEditMenu ","
         ;;
         3)
-            [[ -z "$(dir $scopeFolder)" ]] && dialog --msgbox "There are no dhcp scopes!" 0 0 && continue
+            [[ -z "$(dir $scope_folder)" ]] && dialog --msgbox "There are no dhcp scopes!" 0 0 && continue
 
             scopeFiles=""
-            for file in $(dir $scopeFolder); do
+            for file in $(dir $scope_folder); do
                 scopeFiles+="$file . off "
             done
             exec 3>&1
@@ -204,7 +189,7 @@ dialog_main_menu() {
 
             ! [[ $scopeDeleteYN == "0" ]] && continue
             for file in $scopeDelete; do
-                rm "$scopeFolder/$file"
+                rm "$scope_folder/$file"
                 rm "$exclusionsFolder/$file"
             done
             serviceRestart
@@ -215,7 +200,7 @@ dialog_main_menu() {
 
 dialogEditMenu() {
     option_menu=","
-    currentScope="$scopeFolder/${subnet}s_n${netmask}"
+    currentScope="$scope_folder/${subnet}s_n${netmask}"
     exclusionsFile="$exclusionsFolder/${subnet}s_n${netmask}"
     cidr_notation="${netmask}"
     ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope" && \
