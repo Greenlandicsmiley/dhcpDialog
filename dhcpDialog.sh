@@ -99,17 +99,18 @@ dialog_main_menu() {
     while ! [[ -z "$main_menu" ]]; do
         unset main_menu_list
         main_menu_list+=("1" "About" "2" "License" "3" "Add server")
+        server_number=4
         for server in $(dir $server_folder); do
             server_conf_file="$server_folder/$server/server.conf"
             server_role="$(grep "Role:" "$server_conf_file")"
             server_name="$(grep "Name:" "$server_conf_file")"
             server_address="$(grep "Address:" "$server_conf_file")"
-            main_menu_list+=("${server_name} ${server_role}" "${server_address}")
+            main_menu_list+=("${server_number} ${server_name} ${server_role}" "${server_address}")
+            server_number=$(( server_number + 1 ))
         done
         exec 3>&1
         main_menu=$(dialog --cancel-label "Exit" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)
         exec 3>&-
-        main_menu="${main_menu#* }"
         case $main_menu in
         "Add server")
             exec 3>&1
@@ -126,7 +127,7 @@ dialog_main_menu() {
             continue
         ;;
         esac
-        current_server="${server_menu% *}"
+        current_server="${main_menu% *}"
         current_server="${current_server#* }"
         leases_file="$srv_folder/${current_server}/dhcpd.leases"
         dhcpd_conf_file="$srv_folder/${current_server}/dhcpd.conf"
@@ -163,7 +164,7 @@ dialog_scope_menu() {
         ;;
         2)
             exec 3>&1
-            networkResult=$(dialog --inputbox "Add a scope to ? Examples: 192.168.1.0/24" 0 0 2>&1 1>&3)
+            networkResult=$(dialog --inputbox "Create a scope. Example: 192.168.1.0/24" 0 0 2>&1 1>&3)
             exec 3>&-
             [[ -z "$networkResult" ]] && continue
 
