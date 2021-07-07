@@ -109,6 +109,7 @@ dialog_main_menu() {
         exec 3>&1
         main_menu=$(dialog --cancel-label "Exit" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)
         exec 3>&-
+        main_menu="${main_menu#* }"
         case $main_menu in
         "Add server")
             exec 3>&1
@@ -146,7 +147,7 @@ dialog_scope_menu() {
         case $scope_menu in
         1)
             [[ -z "$(dir $scope_folder)" ]] && \
-                dialog --msgbox "Please add a scope first." 0 0 && continue
+                dialog --msgbox "Add a scope first." 0 0 && continue
             available_scopes=""
             for scope in $(dir $scope_folder); do
                 available_scopes+="$scope . "
@@ -171,7 +172,7 @@ dialog_scope_menu() {
             dialogEditMenu ","
         ;;
         3)
-            [[ -z "$(dir $scope_folder)" ]] && dialog --msgbox "There are no dhcp scopes!" 0 0 && continue
+            [[ -z "$(dir $scope_folder)" ]] && dialog --msgbox "There are no dhcp scopes." 0 0 && continue
 
             scopeFiles=""
             for file in $(dir $scope_folder); do
