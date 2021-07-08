@@ -149,6 +149,7 @@ dialog_scope_menu() {
             option_list_string="$(grep "$option" "$current_scope_file")"
             option_list_name="${optionKeytoName[${option_list_string% *}}"
             option_list_value="${option_list_string#* }"
+            [[ -z "$option_list_value" ]] && option_list_value="Not set"
             scope_menu_items+=("${scope_menu_number} ${option_list_name}" "${option_list_value}")
             scope_menu_number=$(( scope_menu_number + 1 ))
         done
