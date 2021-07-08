@@ -16,7 +16,7 @@ leases_file="leasesFileReplace"
 servers_list="$optFolder/servers.list"
 
 #Arrays
-hashKeys=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
+options_list=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
 
 declare -A optionKeytoName
 optionKeytoName=(["subnet-mask"]="Subnet mask" ["routers"]="Router(s)" ["domain-name-servers"]="DNS server(s)" ["domain-name"]="Domain name" ["broadcast-address"]="Broadcast address" ["static-routes"]="Static route(s)" ["ntp-servers"]="NTP server(s)" ["tftp-server-name"]="TFTP server(s)" ["bootfile-name"]="Boot file name")
@@ -105,48 +105,61 @@ dialog_main_menu() {
             server_role="$(grep "Role:" "$server_conf_file")"
             server_name="$(grep "Name:" "$server_conf_file")"
             server_address="$(grep "Address:" "$server_conf_file")"
-            main_menu_list+=("${server_number} ${server_name} ${server_role}" "${server_address}")
-            server_number=$(( server_number + 1 ))
+            main_menu_list+=("${server_number} ${server_name}" "${server_role} ${server_address}")
+            server_menu_number=$(( server_number + 1 ))
         done
         exec 3>&1
         main_menu=$(dialog --cancel-label "Exit" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)
         exec 3>&-
-        case $main_menu in
-        "Add server")
+        main_menu_result=${main_menu# *}
+        case $main_menu_result in
+        1)
+            dialog --textbox $ABOUT 0 0
+            continue
+        ;;
+        2)
+            dialog --textbox $LICENSE 0 0
+            continue
+        ;;
+        3)
             exec 3>&1
             new_server_name="$(dialog --inputbox "Name of the server" 0 0 )"
             exec 3>&-
             mkdir "$server_folder/${new_server_name// /_}"
         ;;
-        "About")
-            dialog --textbox $ABOUT 0 0
-            continue
-        ;;
-        "License")
-            dialog --textbox $LICENSE 0 0
-            continue
-        ;;
         esac
-        current_server="${main_menu% *}"
-        current_server="${current_server#* }"
+        [[ -z "$main_menu" ]] && continue
+        current_server="${main_menu#* }"
         leases_file="$srv_folder/${current_server}/dhcpd.leases"
         dhcpd_conf_file="$srv_folder/${current_server}/dhcpd.conf"
         scope_folder="$srv_folder/${current_server}/dhcpScopes"
         exclusionsFolder="$srv_folder/${current_server}/exclusions"
+        current_scope="$(grep "Default Scope:" "$server_folder/$current_server/server.conf")"
+        current_scope="${current_scope#*:}"
+        dialog_scope_menu
     done
 }
 
 dialog_scope_menu() {
     while ! [[ -z "$scope_menu" ]]; do
-        unset scope_menu_items
-        scope_menu_items+=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope")
-        current_scope="$(grep "Default Scope:" "$server_folder/$current_server/server.conf")"
-        current_scope="${current_scope#*:}"
+        scope_menu_items+=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope" "4" "Set server configurations")
+        scope_menu_number=4
+        current_scope_file="$server_folder/$current_server/dhcp_scopes/$current_scope"
+        for option in "${options_list[@]}"; do
+            option_list_string="$(grep "$option" "$current_scope_file")"
+            option_list_name="${optionKeytoName[${option_list_string% *}}"
+            option_list_value="${option_list_string#* }"
+            scope_menu_items+=("${scope_menu_number} ${option_list_name}" "${option_list_value}")
+            scope_menu_number=$(( scope_menu_number + 1 ))
+        done
         exec 3>&1
-        scope_menu=$(dialog --menu "Current scope: ${current_scope}\\nCurrent server: ${current_server}" 0 0 0 "${scope_menu_items[@]}" 2>&1 1>&3)
+        scope_menu=$(dialog --cancel-label "Back" --menu "Current scope: ${current_scope}\\nCurrent server: ${current_server}" 0 0 0 "${scope_menu_items[@]}" 2>&1 1>&3)
         exec 3>&-
-        case $scope_menu in
-        1)
+        option_name="${scope_menu#* }"
+        option_code="${optionNametoKey[$scope_menu]}"
+        option_mode=""
+        case ${scope_menu#* } in
+        "Change current scope")
             [[ -z "$(dir $scope_folder)" ]] && \
                 dialog --msgbox "Add a scope first." 0 0 && continue
             available_scopes=""
@@ -154,25 +167,25 @@ dialog_scope_menu() {
                 available_scopes+="$scope . "
             done
             exec 3>&1
-            editChooseScope=$(dialog --menu "Choose a scope to change to" 0 0 0 $available_scopes 2>&1 1>&3)
+            choose_scope_menu=$(dialog --cancel-label "Back" --menu "Choose a scope to change to" 0 0 0 $available_scopes 2>&1 1>&3)
             exec 3>&-
-            [[ -z "$editChooseScope" ]] && continue
+            [[ -z "$choose_scope_menu" ]] && continue
 
-            subnet=${editChooseScope%s_*}
-            netmask=${editChooseScope#*_n}
-            dialogEditMenu
+            subnet=${choose_scope_menu%s_*}
+            netmask=${choose_scope_menu#*_n}
+            continue
         ;;
-        2)
+        "Create new scope")
             exec 3>&1
-            networkResult=$(dialog --inputbox "Create a scope. Example: 192.168.1.0/24" 0 0 2>&1 1>&3)
+            networkResult=$(dialog --cancel-label "Back" --inputbox "Create a scope. Example: 192.168.1.0/24" 0 0 2>&1 1>&3)
             exec 3>&-
             [[ -z "$networkResult" ]] && continue
 
             subnet=${networkResult%/*}
             netmask=${networkResult#*/}
-            dialogEditMenu ","
+            continue
         ;;
-        3)
+        "Delete current scope")
             [[ -z "$(dir $scope_folder)" ]] && dialog --msgbox "There are no dhcp scopes." 0 0 && continue
 
             scopeFiles=""
@@ -196,7 +209,30 @@ dialog_scope_menu() {
             done
             serviceRestart
         ;;
+        "Set server configurations")
+            dialog_server_configuration_menu
+        ;;
+        "Router(s)"|"DNS server(s)"|"Static route(s)"|"NTP server(s)")
+            option_mode="multi"
+        ;;
+        "Domain name"|"TFTP server name"|"Bootfile name")
+            option_mode="quotes"
+        ;;
         esac
+    done
+}
+
+dialog_server_configuration_menu() {
+    while ! [[ -z "$server_configuration_menu" ]]; do
+        exec 3>&1
+        server_configuration_menu=$(dialog --cancel-label "Back" --menu "Change server configuration" 0 0 0 \
+            "1" "Server role" \
+            "2" "Server name" \
+            "3" "Server user" \
+            "4" "IP address" \
+            "5" "Default scope" \
+            "6" "SSH key" 2>&1 1>&3)
+        exec 3>&-
     done
 }
 
@@ -210,7 +246,7 @@ dialogEditMenu() {
     while ! [[ -z "$option_menu" ]]; do
         x_line="$(grep "X:" "$exclusionsFile")"
         z_line="$(grep "Z:" "$exclusionsFile")"
-        for key in "${hashKeys[@]}"; do
+        for key in "${options_list[@]}"; do
             option_value="$(grep "$key " "$currentScope")"
             option_value="${option_value#* }"
             [[ -z "$option_value" ]] && option_value="."
