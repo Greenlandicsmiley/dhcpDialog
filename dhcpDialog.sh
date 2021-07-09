@@ -147,11 +147,11 @@ dialog_scope_menu() {
         current_scope_file="$server_folder/$current_server/dhcp_scopes/$current_scope"
         for option in "${options_list[@]}"; do
             option_list_string="$(grep "$option" "$current_scope_file")"
-            option_list_name="${optionKeytoName[${option_list_string% *}}"
+            option_list_name="${optionKeytoName[${option_list_string% *}]}"
             option_list_value="${option_list_string#* }"
             [[ -z "$option_list_value" ]] && option_list_value="Not set"
-            scope_menu_items+=("${scope_menu_number} ${option_list_name}" "${option_list_value}")
             scope_menu_number=$(( scope_menu_number + 1 ))
+            scope_menu_items+=("${scope_menu_number} ${option_list_name}" "${option_list_value}")
         done
         exec 3>&1
         scope_menu=$(dialog --cancel-label "Back" --menu "Current scope: ${current_scope}\\nCurrent server: ${current_server}" 0 0 0 "${scope_menu_items[@]}" 2>&1 1>&3)
@@ -218,65 +218,6 @@ dialog_scope_menu() {
         ;;
         "Domain name"|"TFTP server name"|"Bootfile name")
             option_mode="quotes"
-        ;;
-        esac
-    done
-}
-
-dialog_server_configuration_menu() {
-    while ! [[ -z "$server_configuration_menu" ]]; do
-        exec 3>&1
-        server_configuration_menu=$(dialog --cancel-label "Back" --menu "Change server configuration" 0 0 0 \
-            "1" "Server role" \
-            "2" "Server name" \
-            "3" "Server user" \
-            "4" "IP address" \
-            "5" "Default scope" \
-            "6" "SSH key" 2>&1 1>&3)
-        exec 3>&-
-    done
-}
-
-dialogEditMenu() {
-    option_menu=","
-    currentScope="$scope_folder/${subnet}s_n${netmask}"
-    exclusionsFile="$exclusionsFolder/${subnet}s_n${netmask}"
-    cidr_notation="${netmask}"
-    ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope" && \
-        touch "$exclusionsFolder/${subnet}s_n${netmask}"
-    while ! [[ -z "$option_menu" ]]; do
-        x_line="$(grep "X:" "$exclusionsFile")"
-        z_line="$(grep "Z:" "$exclusionsFile")"
-        for key in "${options_list[@]}"; do
-            option_value="$(grep "$key " "$currentScope")"
-            option_value="${option_value#* }"
-            [[ -z "$option_value" ]] && option_value="."
-            menuItems+=("${optionKeytoName[$key]}")
-            menuItems+=("${option_value//;}")
-        done
-        if ! [[ -z "$x_line" || -z "$x_line" ]]; then
-            menuItems+=("View dhcp leases")
-            menuItems+=(".")
-            menuItems+=("Manage excluded IPs")
-            menuItems+=(".")
-            menuItems+=("Change scope range")
-            menuItems+=("${x_line:2}-${z_line:2}")
-        else
-            menuItems+=("Set scope range")
-            menuItems+=(".")
-        fi
-        exec 3>&1
-        option_menu=$(dialog --menu "Options" 0 0 0 "${menuItems[@]}" 2>&1 1>&3)
-        exec 3>&-
-        optionName="$option_menu"
-        optionCode="${optionNametoKey[$option_menu]}"
-        optionMode=""
-        case $option_menu in
-        "Router(s)"|"DNS server(s)"|"Static route(s)"|"NTP server(s)")
-            optionMode="multi"
-        ;;
-        "Domain name"|"TFTP server name"|"Bootfile name")
-            optionMode="quotes"
         ;;
         "View dhcp leases")
             dhcp_leases=$(grep -n "lease.*{" $leases_file)
@@ -351,6 +292,45 @@ dialogEditMenu() {
             sed -i "/Z:/s_.*_Z:${scope_range#* }_" "$exclusionsFile"
         ;;
         esac
+    done
+}
+
+dialog_server_configuration_menu() {
+    while ! [[ -z "$server_configuration_menu" ]]; do
+        exec 3>&1
+        server_configuration_menu=$(dialog --cancel-label "Back" --menu "Change server configuration" 0 0 0 \
+            "1" "Server role" \
+            "2" "Server name" \
+            "3" "Server user" \
+            "4" "IP address" \
+            "5" "Default scope" \
+            "6" "SSH key" 2>&1 1>&3)
+        exec 3>&-
+    done
+}
+
+dialogEditMenu() {
+    option_menu=","
+    currentScope="$scope_folder/${subnet}s_n${netmask}"
+    exclusionsFile="$exclusionsFolder/${subnet}s_n${netmask}"
+    cidr_notation="${netmask}"
+    ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope" && \
+        touch "$exclusionsFolder/${subnet}s_n${netmask}"
+    while ! [[ -z "$option_menu" ]]; do
+        x_line="$(grep "X:" "$exclusionsFile")"
+        z_line="$(grep "Z:" "$exclusionsFile")"
+        if ! [[ -z "${x_line:2}" || -z "${z_line:2}" ]]; then
+            menuItems+=("View dhcp leases")
+            menuItems+=(".")
+            menuItems+=("Manage excluded IPs")
+            menuItems+=(".")
+            menuItems+=("Change scope range")
+            menuItems+=("${x_line:2}-${z_line:2}")
+        else
+            menuItems+=("Set scope range")
+            menuItems+=(".")
+        fi
+
         ! [[ $option_menu =~ ^("Manage_excluded_IPs"|"Set_scope_range"|"Change_scope_range")$ ]] && \
             dialog_edit_menu
         scopeGenerate
