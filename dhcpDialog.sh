@@ -140,9 +140,39 @@ dialog_main_menu() {
     done
 }
 
+#Visualization
+#1 Change current scope
+#2 Create new scope
+#3 Delete current scope
+#4 Set server configuration
+#5 Subnet mask
+#6 Routers
+#7 DNS
+#8 Domain name
+#9 Broadcast address
+#10 Static routes
+#11 NTP servers
+#12 TFTP server name
+#13 Bootfile name
+#14 
+#15
+#16
+#17
+#18
 dialog_scope_menu() {
     while ! [[ -z "$scope_menu" ]]; do
         scope_menu_items+=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope" "4" "Set server configurations")
+        x_line="$(grep "X:" "$exclusionsFile")"
+        z_line="$(grep "Z:" "$exclusionsFile")"
+        if ! [[ -z "${x_line:2}" || -z "${z_line:2}" ]]; then
+            menuItems+=("5 Change scope range" "${x_line:2}-${z_line:2}")
+            menuItems+=("6 Manage excluded IPs" ".")
+            menuItems+=("7 View dhcp leases" ".")
+            scope_menu_number=7
+        else
+            menuItems+=("5 Set scope range" ".")
+            scope_menu_number=5
+        fi
         scope_menu_number=4
         current_scope_file="$server_folder/$current_server/dhcp_scopes/$current_scope"
         for option in "${options_list[@]}"; do
