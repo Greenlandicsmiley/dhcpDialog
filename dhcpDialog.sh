@@ -160,6 +160,10 @@ dialog_main_menu() {
 #17
 #18
 dialog_scope_menu() {
+    scope_menu=","
+    cidr_notation="${netmask}"
+    ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope" && \
+        touch "$exclusionsFolder/${subnet}s_n${netmask}"
     while ! [[ -z "$scope_menu" ]]; do
         scope_menu_items+=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope" "4" "Set server configurations")
         x_line="$(grep "X:" "$exclusionsFile")"
@@ -214,7 +218,6 @@ dialog_scope_menu() {
 
             subnet=${networkResult%/*}
             netmask=${networkResult#*/}
-            continue
         ;;
         "Delete current scope")
             [[ -z "$(dir $scope_folder)" ]] && dialog --msgbox "There are no dhcp scopes." 0 0 && continue
@@ -239,9 +242,11 @@ dialog_scope_menu() {
                 rm "$exclusionsFolder/$file"
             done
             serviceRestart
+            continue
         ;;
         "Set server configurations")
             dialog_server_configuration_menu
+            continue
         ;;
         "Router(s)"|"DNS server(s)"|"Static route(s)"|"NTP server(s)")
             option_mode="multi"
@@ -276,7 +281,8 @@ dialog_scope_menu() {
                 ending_line="${lease#*:*:}"
                 [[ "${lease_ip%:*}" == "$lease_menu" ]] && break
             done
-            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $leases_file)" 0 0 
+            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $leases_file)" 0 0
+            continue
         ;;
         "Manage excluded IPs")
             exec 3>&1
@@ -311,7 +317,7 @@ dialog_scope_menu() {
                 done
             fi
         ;;
-        "Set_scope_range"|"Change_scope_range")
+        "Set scope range"|"Change scope range")
             inputbox_init="$(grep "X:" "$exclusionsFile") $(grep "Z:" "$exclusionsFile")"
             exec 3>&1
             scope_range=$(dialog --inputbox "Set the scope range. Example: 192.168.1.1 192.168.1.255. Leave empty to delete." 0 0 "$inputbox_init" 2>&1 1>&3)
@@ -322,6 +328,10 @@ dialog_scope_menu() {
             sed -i "/Z:/s_.*_Z:${scope_range#* }_" "$exclusionsFile"
         ;;
         esac
+        ! [[ $option_menu =~ ^("Change current scope"|"Create new scope"|"Delete current scope"|"Set server configurations"|"View dhcp leases"|"Manage excluded IPs"|"Set scope range"|"Change scope range")$ ]] && \
+            dialog_edit_menu
+        scopeGenerate
+        serviceRestart
     done
 }
 
@@ -336,35 +346,6 @@ dialog_server_configuration_menu() {
             "5" "Default scope" \
             "6" "SSH key" 2>&1 1>&3)
         exec 3>&-
-    done
-}
-
-dialogEditMenu() {
-    option_menu=","
-    currentScope="$scope_folder/${subnet}s_n${netmask}"
-    exclusionsFile="$exclusionsFolder/${subnet}s_n${netmask}"
-    cidr_notation="${netmask}"
-    ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope" && \
-        touch "$exclusionsFolder/${subnet}s_n${netmask}"
-    while ! [[ -z "$option_menu" ]]; do
-        x_line="$(grep "X:" "$exclusionsFile")"
-        z_line="$(grep "Z:" "$exclusionsFile")"
-        if ! [[ -z "${x_line:2}" || -z "${z_line:2}" ]]; then
-            menuItems+=("View dhcp leases")
-            menuItems+=(".")
-            menuItems+=("Manage excluded IPs")
-            menuItems+=(".")
-            menuItems+=("Change scope range")
-            menuItems+=("${x_line:2}-${z_line:2}")
-        else
-            menuItems+=("Set scope range")
-            menuItems+=(".")
-        fi
-
-        ! [[ $option_menu =~ ^("Manage_excluded_IPs"|"Set_scope_range"|"Change_scope_range")$ ]] && \
-            dialog_edit_menu
-        scopeGenerate
-        serviceRestart
     done
 }
 
