@@ -96,6 +96,7 @@ scopeGenerate() {
 
 #Menu functions go here - where Dialog commands will be invoked
 dialog_main_menu() {
+    main_menu=","
     while ! [[ -z "$main_menu" ]]; do
         unset main_menu_list
         main_menu_list+=("1" "About" "2" "License" "3" "Add server")
@@ -122,10 +123,15 @@ dialog_main_menu() {
             continue
         ;;
         3)
-            exec 3>&1
-            new_server_name="$(dialog --inputbox "Name of the server" 0 0 )"
-            exec 3>&-
+            new_server_name=","
+            while ! [[ -z "$new_server_name" ]]; do
+                exec 3>&1
+                new_server_name="$(dialog --inputbox "Name of the server" 0 0 )"
+                exec 3>&-
+            done
+            server_conf_file="$server_folder/${new_server_name// /_}/server.conf"
             mkdir "$server_folder/${new_server_name// /_}"
+            cp "$server_conf_template" "$server_conf_file"
         ;;
         esac
         [[ -z "$main_menu" ]] && continue
@@ -337,15 +343,43 @@ dialog_scope_menu() {
 
 dialog_server_configuration_menu() {
     while ! [[ -z "$server_configuration_menu" ]]; do
+        server_role=""
+        server_name=""
+        server_user=""
+        server_address=""
+        server_default_scope=""
+        server_key=""
         exec 3>&1
         server_configuration_menu=$(dialog --cancel-label "Back" --menu "Change server configuration" 0 0 0 \
-            "1" "Server role" \
-            "2" "Server name" \
-            "3" "Server user" \
-            "4" "IP address" \
-            "5" "Default scope" \
-            "6" "SSH key" 2>&1 1>&3)
+            "1" "Server role: $server_role" \
+            "2" "Server name: $server_name" \
+            "3" "Server user: $server_user" \
+            "4" "IP address: $server_address" \
+            "5" "Default scope: $server_default_scope" \
+            "6" "SSH key: $server_key" 2>&1 1>&3)
         exec 3>&-
+        case $server_configuration_menu in
+        1)
+            exec 3>&1
+            server_configuration_input="$(dialog --yes-label "Master" --no-label "Slave" --yesno "Set value for server role:" 0 0 2>&1 1>&3)"
+            server_configuration_input=$?
+            exec 3>&-
+            [[ $server_configuration_input ]] && \
+                sed -i "/Role/s_.*_Role:master_" $server_conf_file && \
+                continue
+            sed -i "/Role/s_.*_Role:slave_" $server_conf_file
+        ;;
+        2)
+        ;;
+        3)
+        ;;
+        4)
+        ;;
+        5)
+        ;;
+        6)
+        ;;
+        esac
     done
 }
 
