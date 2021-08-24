@@ -18,9 +18,9 @@ servers_list="$optFolder/servers.list"
 #Arrays
 options_list=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
 
-declare -A optionKeytoName
+declare -A optionKeytoName #Associative array to easily convert pretty names to config names
 optionKeytoName=(["subnet-mask"]="Subnet mask" ["routers"]="Router(s)" ["domain-name-servers"]="DNS server(s)" ["domain-name"]="Domain name" ["broadcast-address"]="Broadcast address" ["static-routes"]="Static route(s)" ["ntp-servers"]="NTP server(s)" ["tftp-server-name"]="TFTP server(s)" ["bootfile-name"]="Boot file name")
-declare -A optionNametoKey
+declare -A optionNametoKey #Associative array to easily convert config names to pretty names
 optionNametoKey=(["Subnet mask"]="subnet-mask" ["Router(s)"]="routers" ["DNS server(s)"]="domain-name-servers" ["Domain name"]="domain-name" ["Broadcast address"]="broadcast-address" ["Static route(s)"]="static-routes" ["NTP server(s)"]="ntp-servers" ["TFTP server(s)"]="tftp-server-name" ["Boot file name"]="bootfile-name")
 
 #Non-menu functions go here
@@ -30,104 +30,105 @@ serviceRestart() {
 }
 
 ipAddition() {
-    range_start_octet_2="${rangeStart#*.}" && range_start_octet_2="${rangeStart%.*.*}"
-    range_start_octet_3="${rangeStart#*.*.}" && range_start_octet_3="${rangeStart%.*}"
-    rangeStart="${rangeStart%.*}.$(( ${rangeStart#*.*.*.} + 1 ))"
+    range_start_octet_2="${rangeStart#*.}" && range_start_octet_2="${range_start_octet_2%.*.*}" #Remove 1st, 3rd, and 4th octets
+    range_start_octet_3="${rangeStart#*.*.}" && range_start_octet_3="${range_start_octet_3%.*}" #Remove 1st, 2nd, and 4th octets
+    rangeStart="${rangeStart%.*}.$(( ${rangeStart#*.*.*.} + 1 ))" #Remove 4th octet and then add 4th octet back while adding 1 to it
     [[ ${rangeStart#*.*.*.} -ge 256 ]] && \
-        rangeStart="${rangeStart%.*.*}.$(( range_start_octet_3 + 1 )).0"
+        rangeStart="${rangeStart%.*.*}.$(( range_start_octet_3 + 1 )).0" #Set 4th octet to 0, then add 1 to 3rd octet, if 4th octet is greater than 255
     [[ $range_start_octet_3 -ge 256 ]] && \
-        rangeStart="${rangeStart%.*.*.*}.$(( range_start_octet_2 + 1 )).0.${rangeStart#*.*.*.}"
+        rangeStart="${rangeStart%.*.*.*}.$(( range_start_octet_2 + 1 )).0.${rangeStart#*.*.*.}" #Set 3rd octet to 0, then add 1 to 2nd octet, if 3rd octet is greater than 255
     [[ $range_start_octet_2 -ge 256 ]] && \
-        rangeStart="$(( ${rangeStart%.*.*.*} + 1 )).0.${rangeStart#*.*.}"
+        rangeStart="$(( ${rangeStart%.*.*.*} + 1 )).0.${rangeStart#*.*.}" #Set 2nd octet to 0, then add 1 to 1st octet, if 2nd octet is greater than 255
     [[ ${rangeStart%.*.*.*} -ge 256 ]] && \
-        rangeStart="255.${rangeStart#*.}"
+        rangeStart="255.${rangeStart#*.}" #Set 1st octet to 255 if 1st octet is greater than 255. Probably not needed at all
 }
 
 ipSubtraction() {
-    range_end_octet_2="${range_end#*.}" && range_end_octet_2="${range_end%.*.*}"
-    range_end_octet_3="${range_end#*.*.}" && range_end_octet_3="${range_end%.*}"
-    range_end="${range_end%.*}.$(( ${range_end#*.*.*.} - 1 ))"
+    range_end_octet_2="${range_end#*.}" && range_end_octet_2="${range_end_octet_2%.*.*}" #Remove 1st, 3rd, and 4th octets
+    range_end_octet_3="${range_end#*.*.}" && range_end_octet_3="${range_end_octet_3%.*}" #Remove 1st, 2nd, and 4th octets
+    range_end="${range_end%.*}.$(( ${range_end#*.*.*.} - 1 ))" #Remove 4th octet then add it back while adding 1 to it
     [[ ${range_end#*.*.*.} -le -1 ]] && \
-        range_end="${range_end%.*.*}.$(( range_end_octet_3 - 1 )).255"
+        range_end="${range_end%.*.*}.$(( range_end_octet_3 - 1 )).255" #Set 4th octet to 255, then subtract 3rd octet by 1, if 4th octet is less than 0
     [[ $range_end_octet_3 -le -1 ]] && \
-        range_end="${range_end%.*.*.*}.$(( range_end_octet_2 - 1 )).255.${range_end#*.*.*.}"
+        range_end="${range_end%.*.*.*}.$(( range_end_octet_2 - 1 )).255.${range_end#*.*.*.}" #Set 3rd octet to 255 then subtract 2nd octet by 1, if 3rd octet is less than zero
     [[ $range_end_octet_2 -le -1 ]] && \
-        range_end="$(( ${range_end%.*.*.*} - 1 )).255.${range_end#*.*.}"
+        range_end="$(( ${range_end%.*.*.*} - 1 )).255.${range_end#*.*.}" #Set 2nd octet to 255, then subtract 1st octet by 1, if 2nd octet is less than 0
     [[ ${range_end%.*.*.*} -le -1 ]] && \
-        range_end="0.${range_end#*.}"
+        range_end="0.${range_end#*.}" #Set 1st octet to 0, if 1st octet is less than 0. Probably not needed at all
 }
 
 scopeGenerate() {
-    ! grep -q "X:" "$exclusionsFile" || ! grep -q "Z:" "$exclusionsFile" && return 1
+    ! grep -q "X:" "$exclusionsFile" || ! grep -q "Z:" "$exclusionsFile" && return 1 #Do not generate exclusion file if no scope range has been set
 
-    sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o "$exclusionsFile" "$exclusionsFile"
-    sed -i "/X/,/Z/!d" "$exclusionsFile"
-    for IP in $(< "$exclusionsFile"); do
+    sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o "$exclusionsFile" "$exclusionsFile" #Sort IP addresses and output to current exclusions file
+    sed -i "/X/,/Z/!d" "$exclusionsFile" #Remove all IP addresses outside the scope range
+    while IFS= read -r IP; do; do #Loop through contents of exclusions file
         case ${IP:2} in
         "X:")
-            sed -i "/range/d" "$currentScope"
-            rangeStart=${IP:2}
+            sed -i "/range/d" "$currentScope" #Delete every line that has range
+            rangeStart=${IP:2} #Set starting range to value of X:
         ;;
         "Y:")
             [[ $rangeStart == "${IP:2}" ]] && \
-                ipAddition && continue
-            range_end=${IP:2}
-            ipSubtraction
-            sed -i "/}/s_.*_range $rangeStart $range_end;\\n}_" "$currentScope"
-            rangeStart=${IP:2}
-            ipAddition
+                ipAddition && continue #Add 1 to range start if it is excluded from range
+            range_end=${IP:2} #Set ending range to value of currently looped Y:
+            ipSubtraction #Subtract IP by 1 to not include excluded IP
+            sed -i "/}/s_.*_range $rangeStart $range_end;\\n}_" "$currentScope" #Replace } with correct range string
+            rangeStart=${IP:2} #Set starting range to value of currently looped Y:
+            ipAddition #Add 1 to IP to not include excluded IP
         ;;
         "Z:")
-            unset range_start_no_dot
+            unset range_start_no_dot #Reset variable to avoid adding more to range_start_no_dot variable
             for octet in ${rangeStart//./ }; do
-                range_start_no_dot+="$(printf "%03d" "$octet")"
+                range_start_no_dot+="$(printf "%03d" "$octet")" #Add currently looped octet while padding it with zeros
             done
-            range_end=${IP:2}
-            unset range_end_no_dot
+            range_end=${IP:2} #Set ending range to value of Z:
+            unset range_end_no_dot #Reset variable to avoid adding more to range_end_no_dot variable
             for octet in ${range_end//./ }; do
-                range_end_no_dot+="$(printf "%03d" "$octet")"
+                range_end_no_dot+="$(printf "%03d" "$octet")" #Add currently looped octet while padding it with zeros
             done
             [[ $range_start_no_dot -le $range_end_no_dot ]] && \
-                sed -i "/}/s_.*_range $rangeStart $range_end;\\n}_" "$currentScope"
+                sed -i "/}/s_.*_range $rangeStart $range_end;\\n}_" "$currentScope" #Replace } with correct range string
         ;;
         esac
-    done
+    done < <(grep -v '^ *#' < "$exclusionsFile")
 }
 
 #Menu functions go here - where Dialog commands will be invoked
 dialog_main_menu() {
-    main_menu=","
+    main_menu="," #Set variable to , to be able to loop following commands until user wants to go back
     while ! [[ -z "$main_menu" ]]; do
-        unset main_menu_list
-        main_menu_list+=("1" "About" "2" "License" "3" "Add server")
-        server_number=4
+        unset main_menu_list #Reset variable to avoid adding more to main_menu_list array
+        main_menu_list+=("1" "About" "2" "License" "3" "Add server") #Add static menu items
+        server_menu_number=4 #Set menu item nr to allow for dynamic menu filling
         for server in $(dir $server_folder); do
-            server_conf_file="$server_folder/$server/server.conf"
-            server_role="$(grep "Role:" "$server_conf_file")"
-            server_name="$(grep "Name:" "$server_conf_file")"
-            server_address="$(grep "Address:" "$server_conf_file")"
-            main_menu_list+=("${server_number} ${server_name}" "${server_role} ${server_address}")
-            server_menu_number=$(( server_number + 1 ))
+            server_conf_file="$server_folder/$server/server.conf" #Set server configuration file according to user selection
+            server_role="$(grep "Role:" "$server_conf_file")" #Extract role value from conf file
+            server_name="$(grep "Name:" "$server_conf_file")" #Extract name value from conf file
+            server_address="$(grep "Address:" "$server_conf_file")" #Extract address value from conf file
+            main_menu_list+=("${server_menu_number} ${server_name}" "${server_role} ${server_address}") #Add menu item according to conf file
+            server_menu_number=$(( server_menu_number + 1 )) #Add menu item nr for next menu item
         done
         exec 3>&1
         main_menu=$(dialog --cancel-label "Exit" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)
         exec 3>&-
-        main_menu_result=${main_menu# *}
+        main_menu_result=${main_menu# *} #Extract menu selection from menu result
         case $main_menu_result in
         1)
-            dialog --textbox $ABOUT 0 0
+            dialog --textbox $ABOUT 0 0 #Display about information
             continue
         ;;
         2)
-            dialog --textbox $LICENSE 0 0
+            dialog --textbox $LICENSE 0 0 #Display license information
             continue
         ;;
         3)
-            new_server_name=","
-            while ! [[ -z "$new_server_name" ]]; do
+            unset new_server_name #Infinitely loop until user sets a name for the server
+            until ! [[ -z "$new_server_name" ]]; do
                 exec 3>&1
-                new_server_name="$(dialog --inputbox "Name of the server" 0 0 )"
+                new_server_name="$(dialog --inputbox "Set a name of the server" 0 0 )"
                 exec 3>&-
+                [[ -d "$new_server_name" ]] && unset new_server_name && dialog --msgbox "Server already exists!" 0 0
             done
             server_conf_file="$server_folder/${new_server_name// /_}/server.conf"
             mkdir "$server_folder/${new_server_name// /_}"
