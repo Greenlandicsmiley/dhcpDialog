@@ -128,22 +128,22 @@ dialog_main_menu() {
                 exec 3>&1
                 new_server_name="$(dialog --inputbox "Set a name of the server" 0 0 )"
                 exec 3>&-
-                [[ -d "$new_server_name" ]] && unset new_server_name && dialog --msgbox "Server already exists!" 0 0
+                [[ -d "$new_server_name" ]] && unset new_server_name && dialog --msgbox "Server already exists!" 0 0 #Unset variable to loop again until user chooses a server name that has not been chosen yet
             done
-            server_conf_file="$server_folder/${new_server_name// /_}/server.conf"
-            mkdir "$server_folder/${new_server_name// /_}"
-            cp "$server_conf_template" "$server_conf_file"
+            server_conf_file="$server_folder/${new_server_name// /_}/server.conf" #Set server configuration file according to user input
+            mkdir "$server_folder/${new_server_name// /_}" #Create server directory
+            cp "$server_conf_template" "$server_conf_file" #Copy server configuration template
         ;;
         esac
-        [[ -z "$main_menu" ]] && continue
-        current_server="${main_menu#* }"
-        leases_file="$srv_folder/${current_server}/dhcpd.leases"
-        dhcpd_conf_file="$srv_folder/${current_server}/dhcpd.conf"
-        scope_folder="$srv_folder/${current_server}/dhcpScopes"
-        exclusionsFolder="$srv_folder/${current_server}/exclusions"
-        current_scope="$(grep "Default Scope:" "$server_folder/$current_server/server.conf")"
-        current_scope="${current_scope#*:}"
-        dialog_scope_menu
+        [[ -z "$main_menu" ]] && continue #Reset loop if user input for main menu is empty to avoid running commands below
+        current_server="${main_menu#* }" #Extract selected server from user selection
+        leases_file="$srv_folder/${current_server}/dhcpd.leases" #Set leases file variable according to user selection
+        dhcpd_conf_file="$srv_folder/${current_server}/dhcpd.conf" #Set conf file variable according to user selection
+        scope_folder="$srv_folder/${current_server}/dhcpScopes" #Set scope folder variable according to user selection
+        exclusionsFolder="$srv_folder/${current_server}/exclusions" #Set exclusions folder variable according to user selection
+        current_scope="$(grep "Default Scope:" "$server_folder/$current_server/server.conf")" #Set current scope to user selection
+        current_scope="${current_scope#*:}" #Remove everything before : to get the correct scope value
+        dialog_scope_menu #Switch to scope menu for current scope
     done
 }
 
