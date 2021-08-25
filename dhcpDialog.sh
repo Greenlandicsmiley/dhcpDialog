@@ -142,21 +142,21 @@ dialog_main_menu() {
         scope_folder="$srv_folder/${current_server}/dhcpScopes" #Set scope folder variable according to user selection
         exclusionsFolder="$srv_folder/${current_server}/exclusions" #Set exclusions folder variable according to user selection
         current_scope="$(grep "Default Scope:" "$server_folder/$current_server/server.conf")" #Set current scope to user selection
-        current_scope="${current_scope#*:}" #Remove everything before : to get the correct scope value
+        current_scope="${current_scope#*:}" #Remove everything before and including : to get the correct scope value
         dialog_scope_menu #Switch to scope menu for current scope
     done
 }
 
 #Visualization
-#1 Change current scope
-#2 Create new scope
-#3 Delete current scope
-#4 Set server configuration
-#5 Subnet mask
-#6 Routers
-#7 DNS
-#8 Domain name
-#9 Broadcast address
+#1  Change current scope
+#2  Create new scope
+#3  Delete current scope
+#4  Set server configuration
+#5  Subnet mask
+#6  Routers
+#7  DNS
+#8  Domain name
+#9  Broadcast address
 #10 Static routes
 #11 NTP servers
 #12 TFTP server name
@@ -265,32 +265,30 @@ dialog_scope_menu() {
             option_mode="quotes" #Set option mode to quotes
         ;;
         "View dhcp leases")
-            dhcp_leases=$(grep -n "lease.*{" $leases_file) #
-            for lease in ${dhcp_leases// /_}; do
-                lease_ip="${lease% *}"
-                lease_ip="${lease_ip#*: }"
-                ! [[ "${lease//_/ }" == "$(grep -n "${lease//_/ }" "$leases_file" | tail -n 1)" ]] && continue
-                for octet in 
-                starting_line=${lease#:*}
-                ending_line=$(( starting_line + 1 ))
-                until [[ "$(sed -n "${ending_line}p" "$leases_file")" == "}" ]]; do
-                    ending_line=$(( ending_line + 1 ))
+            unset lease_ip_infos #Reset associative array
+            declare -A lease_ip_infos
+            dhcp_leases=$(grep -n "lease.*{" $leases_file) #Get all lease lines
+            for lease in ${dhcp_leases// /_}; do #Loop through variable that has contents of leases
+                ! [[ "${lease//_/ }" == "$(grep -n "${lease//_/ }" "$leases_file" | tail -n 1)" ]] && continue #If current lease is not the latest, then do not add to active leases
+                lease_ip="${lease% *}" #Remove { and whitespace from the end
+                lease_ip="${lease_ip#*: }" #Remove line nr and whitespace from the beginning. At this point variable should look like: lease x.x.x.x
+                starting_line=${lease#:*} #Get line nr of lease
+                ending_line=$(( starting_line + 1 )) #Set ending line nr of the lease
+                until [[ "$(sed -n "${ending_line}p" "$leases_file")" == "}" ]]; do #Add 1 to ending line variable until the line is the end of the lease
+                    ending_line=$(( ending_line + 1 )) #Add to ending line variable by 1
                 done
-                for active_lease in $(grep -n "binding state active" "$leases_file"); do
-                    ! [[ ${active_lease%:*} -gt $starting_line && ${active_lease%:*} -lt $ending_line ]] && continue
-                    lease_ip_infos+="${starting_line}:${lease_ip}:${ending_line} "
-                    lease_menu_items+="$lease_ip . "
+                for active_lease in $(grep -n "binding state active" "$leases_file"); do #Get all lines that has binding state active and loop through the list
+                    ! [[ ${active_lease%:*} -gt $starting_line && ${active_lease%:*} -lt $ending_line ]] && continue #Reset loop if current line is not between the starting line and the ending line of the current lease being looped through
+                    lease_ip_infos+=(["$lease_ip"]="${starting_line}:${ending_line}") #Add lease information to associative array for easier information extraction
+                    lease_menu_items+=("$lease_ip" ".") #Dynamically add lease ip to menu item list
                 done
             done
             exec 3>&1
-            lease_menu=$(dialog --menu "View active leases" 0 0 0 $lease_menu_items 2>&1 1>&3)
+            lease_menu=$(dialog --menu "View active leases" 0 0 0 "${lease_menu_items[@]}" 2>&1 1>&3)
             exec 3>&-
-            for lease in $lease_ip_infos; do
-                lease_ip="${lease#*:}"
-                starting_line="${lease%:*:*}"
-                ending_line="${lease#*:*:}"
-                [[ "${lease_ip%:*}" == "$lease_menu" ]] && break
-            done
+            lease_line_numbers="${lease_ip_infos[$lease_menu]}" #Store line nr information into a variable 
+            starting_line="${lease_line_numbers%:*}"
+            ending_line="${lease_line_numbers#*:}"
             dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $leases_file)" 0 0
             continue
         ;;
