@@ -224,10 +224,9 @@ dialog_scope_menu() {
             networkResult=$(dialog --cancel-label "Back" --inputbox "Create a scope. Example: 192.168.1.0/24" 0 0 2>&1 1>&3) #Tell user to input subnet information
             exec 3>&-
             [[ -z "$networkResult" ]] && continue #Reset loop if no scope has been added
-
             subnet=${networkResult%/*} #Set subnet variable according to user input
             netmask=${networkResult#*/} #Set netmask variable according to user input
-            #Might want to reset loop here
+            dialog_edit_menu
         ;;
         "Delete current scope")
             [[ -z "$(dir $scope_folder)" ]] && dialog --msgbox "There are no dhcp scopes." 0 0 && continue #Reset loop if there are no scopes
@@ -286,58 +285,56 @@ dialog_scope_menu() {
             exec 3>&1
             lease_menu=$(dialog --menu "View active leases" 0 0 0 "${lease_menu_items[@]}" 2>&1 1>&3)
             exec 3>&-
-            lease_line_numbers="${lease_ip_infos[$lease_menu]}" #Store line nr information into a variable 
-            starting_line="${lease_line_numbers%:*}"
-            ending_line="${lease_line_numbers#*:}"
-            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $leases_file)" 0 0
+            lease_line_numbers="${lease_ip_infos[$lease_menu]}" #Extract line information from IP into a variable
+            starting_line="${lease_line_numbers%:*}" #Get starting line of lease
+            ending_line="${lease_line_numbers#*:}" #Get ending line of lease
+            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $leases_file)" 0 0 #Display lease information
             continue
         ;;
         "Manage excluded IPs")
             exec 3>&1
             excludeOrView=$(dialog --menu "Manage exclusion list" 0 0 0 "1" "Exclude an IP" "2" "View or edit the list" 2>&1 1>&3)
             exec 3>&-
-            if [[ $excludeOrView == "1" ]]; then
+            if [[ "$excludeOrView" == "1" ]]; then #Check if user chose excluding an IP
                 exec 3>&1
                 excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
                 exec 3>&-
                 grep -q "$excluding" "$exclusionsFile" && \
-                    dialog --msgbox "That IP is already excluded!" 0 0 && continue
-                echo "Y:$excluding" >> "$exclusionsFile"
+                    dialog --msgbox "That IP is already excluded!" 0 0 && continue #Reset loop if IP was already excluded
+                echo "Y:$excluding" >> "$exclusionsFile" #Exclude IP if it is not excluded already
             else
-                ! grep -q "Y:" "$exclusionsFile" && continue
-                exclusionList=""
-                for IP in $(grep "Y:" "$exclusionsFile"); do
-                    exclusionList+="${IP:2} . off"
+                ! grep -q "Y:" "$exclusionsFile" && continue #Reset loop if no IP has been excluded yet
+                unset exclusionList
+                for IP in $(grep "Y:" "$exclusionsFile"); do #Loop through all excluded IPs
+                    exclusionList+=("${IP:2}" "." "off") #Add IP to checklist while removing Y:
                 done
                 exec 3>&1
-                remove_ip_list=$(dialog --checklist "View or remove IPs from exclusion" 0 0 0 $exclusionList 2>&1 1>&3)
+                remove_ip_list=$(dialog --checklist "View or remove IPs from exclusion" 0 0 0 "${exclusionList[@]}" 2>&1 1>&3)
                 exec 3>&-
-
-                [[ -z "$remove_ip_list" ]] && continue
+                [[ -z "$remove_ip_list" ]] && continue #Reset loop if user cancels
                 exec 3>&1
-                removeIPYN=$(dialog --yesno "Are you sure you want to remove these IPs from exlcusion?: $removeIPList" 0 0 2>&1 1>&3)
-                removeIPYN=$?
+                delete_ip_confirmation=$(dialog --yesno "Are you sure you want to remove these IPs from exlcusion?: $removeIPList" 0 0 2>&1 1>&3) #Confirm with user if the IPs they chose to delete should be deleted
+                delete_ip_confirmation=$? #Get result of confirmation
                 exec 3>&-
-
-                ! [[ $removeIPYN == "0" ]] && continue
-                for ip in $remove_ip_list; do
-                    sed -i "/${ip}/d" "$exclusionsFile"
+                ! [[ $remove_ip_confirmation == "0" ]] && continue #Reset loop if user cancels
+                for ip in $remove_ip_list; do #Loop through IPs chosen to be deleted and
+                    sed -i "/${ip}/d" "$exclusionsFile" #Delete excluded IP from exclusion list
                 done
             fi
+            dialog_edit_menu
         ;;
         "Set scope range"|"Change scope range")
-            inputbox_init="$(grep "X:" "$exclusionsFile") $(grep "Z:" "$exclusionsFile")"
+            inputbox_init="$(grep "X:" "$exclusionsFile") $(grep "Z:" "$exclusionsFile")" #Get scope range of current scope for initial input box value
             exec 3>&1
             scope_range=$(dialog --inputbox "Set the scope range. Example: 192.168.1.1 192.168.1.255. Leave empty to delete." 0 0 "$inputbox_init" 2>&1 1>&3)
             exec 3>&-
             [[ -z "$scope_range" ]] && \
-                sed -i "/X:/,/Z:/d" "$exclusionsFile" && continue
+                sed -i "/X:/,/Z:/d" "$exclusionsFile" && continue #Delete scope range if input box is left empty
             sed -i "/X:/s_.*_X:${scope_range% *}_" "$exclusionsFile"
-            sed -i "/Z:/s_.*_Z:${scope_range#* }_" "$exclusionsFile"
+            sed -i "/Z:/s_.*_Z:${scope_range#* }_" "$exclusionsFile" #Replace range with new values
+            dialog_edit_menu
         ;;
         esac
-        ! [[ $option_menu =~ ^("Change current scope"|"Create new scope"|"Delete current scope"|"Set server configurations"|"View dhcp leases"|"Manage excluded IPs"|"Set scope range"|"Change scope range")$ ]] && \
-            dialog_edit_menu
         scopeGenerate
         serviceRestart
     done
@@ -353,7 +350,7 @@ dialog_server_configuration_menu() {
         server_key=""
         exec 3>&1
         server_configuration_menu=$(dialog --cancel-label "Back" --menu "Change server configuration" 0 0 0 \
-            "1" "Server role: $server_role" \
+            "1" "Server role: $server_role - " \
             "2" "Server name: $server_name" \
             "3" "Server user: $server_user" \
             "4" "IP address: $server_address" \
@@ -363,7 +360,7 @@ dialog_server_configuration_menu() {
         case $server_configuration_menu in
         1)
             exec 3>&1
-            server_configuration_input="$(dialog --yes-label "Master" --no-label "Slave" --yesno "Set value for server role:" 0 0 2>&1 1>&3)"
+            server_configuration_input="$(dialog --yes-label "Master" --no-label "Slave" --yesno "Set value for server role:" 0 0 2>&1 1>&3)" #Yes no dialog to force user to set a role. Might want to change to a toggle
             server_configuration_input=$?
             exec 3>&-
             [[ $server_configuration_input ]] && \
