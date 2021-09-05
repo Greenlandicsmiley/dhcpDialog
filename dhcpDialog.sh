@@ -25,7 +25,7 @@ optionNametoKey=(["Subnet mask"]="subnet-mask" ["Router(s)"]="routers" ["DNS ser
 
 #Non-menu functions go here
 serviceRestart() {
-    cat $scope_folder/s* > $dhcpd_conf_file
+    cat "$scope_folder/s*" > "$dhcpd_conf_file"
     #service
 }
 
@@ -341,42 +341,72 @@ dialog_scope_menu() {
 }
 
 dialog_server_configuration_menu() {
+    server_configuration_menu=","
     while ! [[ -z "$server_configuration_menu" ]]; do
-        server_role=""
-        server_name=""
-        server_user=""
-        server_address=""
-        server_default_scope=""
-        server_key=""
+        #Add server configuration menu items for server options
+        server_role="$(grep "Role:" $server_conf_file)"
+        server_conf_menu_items+=("1" "Server role: ${server_role/Role:}")
+
+        server_name="$(grep "Name:" $server_conf_file)"
+        server_conf_menu_items+=("2" "Server name: ${server_name/Name:}")
+
+        server_user="$(grep "User:" $server_conf_file)"
+        server_conf_menu_items+=("3" "Server user: ${server_user/User:}")
+
+        server_address="$(grep "Address:" $server_conf_file)"
+        server_conf_menu_items+=("4" "IP address: ${server_address/Address:}")
+
+        server_default_scope="$(grep "Default scope:" $server_conf_file)"
+        server_default_scope="${server_default_scope/Default scope:}"
+        [[ -z "$sever_default_scope" ]] && server_default_scope="Not set"
+        server_conf_menu_items+=("5" "Default scope: $server_default_scope")
+
+        server_key="$(grep "Key:" $server_conf_file)"
+        server_conf_menu_items+=("6" "SSH key: ${server_key/Key:}")
+
         exec 3>&1
-        server_configuration_menu=$(dialog --cancel-label "Back" --menu "Change server configuration" 0 0 0 \
-            "1" "Server role: $server_role - " \
-            "2" "Server name: $server_name" \
-            "3" "Server user: $server_user" \
-            "4" "IP address: $server_address" \
-            "5" "Default scope: $server_default_scope" \
-            "6" "SSH key: $server_key" 2>&1 1>&3)
+        server_configuration_menu="$(dialog --cancel-label "Back" --menu "Change server configuration" 0 0 0 $server_conf_menu_items 2>&1 1>&3)"
         exec 3>&-
         case $server_configuration_menu in
         1)
             exec 3>&1
-            server_configuration_input="$(dialog --yes-label "Master" --no-label "Slave" --yesno "Set value for server role:" 0 0 2>&1 1>&3)" #Yes no dialog to force user to set a role. Might want to change to a toggle
-            server_configuration_input=$?
+            server_configuration_input="$(dialog --yes-label "Master" --no-label "Slave" --yesno "Set role for $server_name:" 0 0 2>&1 1>&3)" #Yes no dialog to force user to set a role
+            server_configuration_input="$?"
             exec 3>&-
-            [[ $server_configuration_input ]] && \
-                sed -i "/Role/s_.*_Role:master_" $server_conf_file && \
+            [[ "$server_configuration_input" ]] && \
+                sed -i "/Role/s_.*_Role:master_" "$server_conf_file" && \
                 continue
-            sed -i "/Role/s_.*_Role:slave_" $server_conf_file
+            sed -i "/Role/s_.*_Role:slave_" "$server_conf_file"
         ;;
         2)
+            exec 3>&1
+            server_change_name="$(dialog --inputbox "Set name for $server_name:" 0 0 $server_name 2>&1 1>&3)"
+            exec 3>&-
+            ! [[ -z "$server_change_name" ]] && sed -i "/Name:/s_${server_name}_${server_change_name}_"
         ;;
         3)
+            exec 3>&1
+            server_change_user="$(dialog --inputbox "Set user for $server_name:" 0 0 $server_user 2>&1 1>&3)"
+            exec 3>&-
+            ! [[ -z "$server_change_user" ]] && sed -i "/User:/s_${server_user}_${server_change_user}_"
         ;;
         4)
+            exec 3>&1
+            server_change_address="$(dialog --inputbox "Set address for $server_name:" 0 0 $server_address 2>&1 1>&3)"
+            exec 3>&-
+            ! [[ -z "$server_change_address" ]] && sed -i "/Address:/s_${server_address}_${server_change_address}_"
         ;;
         5)
+            exec 3>&1
+            server_change_default_scope="$(dialog --inputbox "Set default scope for $server_name:" 0 0 $server_user 2>&1 1>&3)"
+            exec 3>&-
+            ! [[ -z "$server_change_default_scope" ]] && sed -i "/Default scope:/s_${server_default_scope}_${server_change_default_scope}_"
         ;;
         6)
+            exec 3>&1
+            server_change_key="$(dialog --inputbox "Set SSH key location for $server_name:" 0 0 $server_key 2>&1 1>&3)"
+            exec 3>&-
+            ! [[ -z "$server_change_key" ]] && sed -i "/Key:/s_${server_key}_${server_change_key}_"
         ;;
         esac
     done
