@@ -245,7 +245,7 @@ dialog_scope_menu() {
             scopeDeleteYN=$? #Set confirmation variable to exit status
             exec 3>&-
 
-            ! [[ $scopeDeleteYN == "0" ]] && continue #Reset loop if user cancels deletion
+            ! [[ "$scopeDeleteYN" == "0" ]] && continue #Reset loop if user cancels deletion
             for file in $scopeDelete; do #Loop through selected scopes
                 rm "$scope_folder/$file" #Delete scope file
                 rm "$exclusionsFolder/$file" #Delete scope exclusions file
