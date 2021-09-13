@@ -2,18 +2,11 @@
 
 dialog --msgbox "DEVELOPMENT ONLY" 0 0
 
-#File paths
-optFolder="/opt/dhcpDialog"
-server_dir="/srv/dhcpDialog"
+#Source variables from .env file except for ABOUT and LICENSE
+source /etc/dhcpDialog.env
 
-
-scope_folder="$optFolder/dhcpScopes"
-exclusionsFolder="$optFolder/exclusions"
-dhcpd_conf_file="$optFolder/dhcpd.conf"
-LICENSE="$optFolder/LICENSE"
-ABOUT="$optFolder/ABOUT"
-leases_file="leasesFileReplace"
-servers_list="$optFolder/servers.list"
+LICENSE="$OPT_DIR/LICENSE"
+ABOUT="$OPT_DIR/ABOUT"
 
 #Arrays
 options_list=("subnet-mask" "routers" "domain-name-servers" "domain-name" "broadcast-address" "static-routes" "ntp-servers" "tftp-server-name" "bootfile-name")
@@ -25,7 +18,7 @@ optionNametoKey=(["Subnet mask"]="subnet-mask" ["Router(s)"]="routers" ["DNS ser
 
 #Non-menu functions go here
 serviceRestart() {
-    cat "$scope_folder/s*" > "$dhcpd_conf_file"
+    cat "$SCOPE_DIR/s*" > "$DHCPD_CONF_FILE"
     #service
 }
 
@@ -98,17 +91,24 @@ scopeGenerate() {
 dialog_main_menu() {
     main_menu="," #Set variable to , to be able to loop following commands until user wants to go back
     while ! [[ -z "$main_menu" ]]; do
-        unset main_menu_list #Reset variable to avoid adding more to main_menu_list array
-        main_menu_list+=("1" "About" "2" "License" "3" "Add server") #Add static menu items
-        server_menu_number=4 #Set menu item nr to allow for dynamic menu filling
-        pushd "$server_dir"
+        #Reset variable to avoid adding more to main_menu_list array
+        #Add static menu items
+        #Set menu item nr to allow for dynamic menu filling
+        unset main_menu_list
+        main_menu_list+=("1" "About" "2" "License" "3" "Add server")
+        main_menu_number=4
+        #Set server configuration file variable to extract server configuration
+        #Get server role from conf file
+        #Get server name from conf file
+        #Get server address from conf file
+        pushd "$SERVER_DIR"
         for server in *; do
-            server_conf_file="$server_dir/$server/server.conf" #Set server configuration file according to user selection
-            server_role="$(grep "Role:" "$server_conf_file")" #Extract role value from conf file
-            server_name="$(grep "Name:" "$server_conf_file")" #Extract name value from conf file
-            server_address="$(grep "Address:" "$server_conf_file")" #Extract address value from conf file
-            main_menu_list+=("${server_menu_number} ${server_name}" "${server_role} ${server_address}") #Add menu item according to conf file
-            server_menu_number=$(( server_menu_number + 1 )) #Add menu item nr for next menu item
+            server_conf_file="$SERVER_DIR/$server/server.conf"
+            server_role="$(grep "Role:" "$server_conf_file")"
+            server_name="$(grep "Name:" "$server_conf_file")"
+            server_address="$(grep "Address:" "$server_conf_file")"
+            main_menu_list+=("${main_menu_number} ${server_name/Name:}" "${server_role/Role:} ${server_address/Address:}")
+            main_menu_number=$(( main_menu_number + 1 ))
         done
         popd
         exec 3>&1
@@ -128,22 +128,22 @@ dialog_main_menu() {
             unset new_server_name #Infinitely loop until user sets a name for the server
             until ! [[ -z "$new_server_name" ]]; do
                 exec 3>&1
-                new_server_name="$(dialog --inputbox "Set a name of the server" 0 0 )"
+                new_server_name="$(dialog --inputbox "Set a name for the server" 0 0 )"
                 exec 3>&-
                 [[ -d "$new_server_name" ]] && unset new_server_name && dialog --msgbox "Server already exists!" 0 0 #Unset variable to loop again until user chooses a server name that has not been chosen yet
             done
-            server_conf_file="$server_dir/${new_server_name// /_}/server.conf" #Set server configuration file according to user input
-            mkdir "$server_dir/${new_server_name// /_}" #Create server directory
+            server_conf_file="$SERVER_DIR/${new_server_name// /_}/server.conf" #Set server configuration file according to user input
+            mkdir "$SERVER_DIR/${new_server_name// /_}" #Create server directory
             cp "$server_conf_template" "$server_conf_file" #Copy server configuration template
         ;;
         esac
         [[ -z "$main_menu" ]] && continue #Reset loop if user input for main menu is empty to avoid running commands below
         current_server="${main_menu#* }" #Extract selected server from user selection
-        leases_file="$server_dir/${current_server}/dhcpd.leases" #Set leases file variable according to user selection
-        dhcpd_conf_file="$server_dir/${current_server}/dhcpd.conf" #Set conf file variable according to user selection
-        scope_folder="$server_dir/${current_server}/dhcpScopes" #Set scope folder variable according to user selection
-        exclusionsFolder="$server_dir/${current_server}/exclusions" #Set exclusions folder variable according to user selection
-        current_scope="$(grep "Default Scope:" "$server_dir/$current_server/server.conf")" #Set current scope to user selection
+        leases_file="$SERVER_DIR/${current_server}/dhcpd.leases" #Set leases file variable according to user selection
+        dhcpd_conf_file="$SERVER_DIR/${current_server}/dhcpd.conf" #Set conf file variable according to user selection
+        scope_folder="$SERVER_DIR/${current_server}/dhcpScopes" #Set scope folder variable according to user selection
+        exclusionsFolder="$SERVER_DIR/${current_server}/exclusions" #Set exclusions folder variable according to user selection
+        current_scope="$(grep "Default Scope:" "$SERVER_DIR/$current_server/server.conf")" #Set current scope to user selection
         current_scope="${current_scope#*:}" #Remove everything before and including : to get the correct scope value
         dialog_scope_menu #Switch to scope menu for current scope
     done
