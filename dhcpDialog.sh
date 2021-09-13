@@ -169,95 +169,147 @@ dialog_main_menu() {
 #17
 #18
 dialog_scope_menu() {
-    scope_menu="," #Set variable to comma to be able to loop while loop
-    cidr_notation="${netmask}" #Convert CIDR notation to netmask
+    #Set scope menu variable to be able to loop
+    #Convert CIDR notation to netmask
+    #Create exclusions file if it does not exist
+    scope_menu=","
+    cidr_notation="${netmask}"
     ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope" && \
-        touch "$exclusionsFolder/${subnet}s_n${netmask}" #Create exclusions file if it does not exist
+        touch "$exclusionsFolder/${subnet}s_n${netmask}"
     while ! [[ -z "$scope_menu" ]]; do
-        scope_menu_items+=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope" "4" "Set server configurations") #Add static menu items
-        x_line="$(grep "X:" "$exclusionsFile")" #Get line nr of X: to later get value
-        z_line="$(grep "Z:" "$exclusionsFile")" #Get line nr of Y: to later get value
-        scope_menu_number=4 #Set scope menu nr to 4 as default
-        if ! [[ -z "${x_line:2}" || -z "${z_line:2}" ]]; then #Check if X or Y line exist. Assuming both exist if one does
-            menuItems+=("5 Change scope range" "${x_line:2}-${z_line:2}") #Add static menu item with correct values for currently selected subnet
-            menuItems+=("6 Manage excluded IPs" ".") #Add static menu item for managing excluded IPs
-            menuItems+=("7 View dhcp leases" ".") #Add static menu item for viewing dhcp leases
-            scope_menu_number=7 #Set scope menu nr to 7 so dynamically added menu items get the correct menu nr
+        #Add static menu items
+        #Get line nr of X: to later get value
+        #Get line nr of Y: to later get value
+        #Set scope menu nr to 4 as default
+        scope_menu_items+=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope" "4" "Set server configurations")
+        x_line="$(grep "X:" "$exclusionsFile")"
+        z_line="$(grep "Z:" "$exclusionsFile")"
+        scope_menu_number=4
+        #Check if X or Y line exist. Assuming both exist if one does
+        #Add static menu item with correct values for currently selected subnet
+        #Add static menu item for managing excluded IPs
+        #Add static menu item for viewing dhcp leases
+        #Set scope menu nr to 7 so dynamically added menu items get the correct menu nr
+        #Else
+        #Add set scope range if no scope range has been set
+        #Set scope menu nr to 5 so dynamically added menu items get the correct menu nr
+        if ! [[ -z "${x_line:2}" || -z "${z_line:2}" ]]; then
+            menuItems+=("5 Change scope range" "${x_line:2}-${z_line:2}")
+            menuItems+=("6 Manage excluded IPs" ".")
+            menuItems+=("7 View dhcp leases" ".")
+            scope_menu_number=7
         else
-            menuItems+=("5 Set scope range" ".") #Add set scope range if no scope range has been set
-            scope_menu_number=5 #Set scope menu nr to 5 so dynamically added menu items get the correct menu nr
+            menuItems+=("5 Set scope range" ".")
+            scope_menu_number=5
         fi
-        current_scope_file="$server_dir/$current_server/dhcp_scopes/$current_scope" #Set current scope file to the correct file for later file manipulation
+        #Set current scope file to the correct file for later file manipulation
+        #Loop through scope options
+        #Get whole string of line of the currently looped option
+        #Extract option name from the string
+        #Set option name to loop variable if option does not exist
+        #Extract value from the string
+        #If value not selected set to not set
+        #Addition to the scope menu nr
+        #Add menu item dynamically according to extracted information from string
+        current_scope_file="$server_dir/$current_server/dhcp_scopes/$current_scope"
         for option in "${options_list[@]}"; do
-            option_list_string="$(grep "$option" "$current_scope_file")" #Get whole string of line of the currently looped option
-            option_list_name="${optionKeytoName[${option_list_string% *}]}" #Extract option name from the string
-            [[ -z "$option_list_name" ]] && option_list_name="$option" #Set option name to loop variable if option does not exist
-            option_list_value="${option_list_string#* }" #Extract value from the string
-            [[ -z "$option_list_value" ]] && option_list_value="Not set" #If value not selected set to not set
-            scope_menu_number=$(( scope_menu_number + 1 )) #Addition to the scope menu nr
-            scope_menu_items+=("${scope_menu_number} ${option_list_name}" "${option_list_value}") #Add menu item dynamically according to extracted information from string
+            option_list_string="$(grep "$option" "$current_scope_file")"
+            option_list_name="${optionKeytoName[${option_list_string% *}]}"
+            [[ -z "$option_list_name" ]] && option_list_name="$option"
+            option_list_value="${option_list_string#* }"
+            [[ -z "$option_list_value" ]] && option_list_value="Not set"
+            scope_menu_number=$(( scope_menu_number + 1 ))
+            scope_menu_items+=("${scope_menu_number} ${option_list_name}" "${option_list_value}")
         done
         exec 3>&1
         scope_menu=$(dialog --cancel-label "Back" --menu "Current scope: ${current_scope}\\nCurrent server: ${current_server}" 0 0 0 "${scope_menu_items[@]}" 2>&1 1>&3)
         exec 3>&-
-        option_name="${scope_menu#* }" #Get option name from selected item
-        option_code="${optionNametoKey[$option_name]}" #Convert option name to key
-        option_mode="" #Set option mode to empty as default
+        #Get option name from selected item
+        #Convert option name to key
+        #Set option mode to empty as default
+        option_name="${scope_menu#* }"
+        option_code="${optionNametoKey[$option_name]}"
+        option_mode=""
         case ${scope_menu#* } in
         "Change current scope")
+            #Tell user to ask scope first if no scope has been set
+            #Reset variable
+            #Loop through files in scope dir
+            #Add scope file to menu list array
             [[ -z "$(dir $scope_folder)" ]] && \
-                dialog --msgbox "Add a scope first." 0 0 && continue #Tell user to ask scope first if no scope has been set
-            unset available_scopes #Reset variable
+                dialog --msgbox "Add a scope first." 0 0 && continue
+            unset available_scopes
             cd "$scope_folder"
-            for scope in *; do #Loop through files in scope dir
-                available_scopes+=("$scope" ".") #Add scope file to menu list array
+            for scope in *; do
+                available_scopes+=("$scope" ".")
             done
             exec 3>&1
             choose_scope_menu=$(dialog --cancel-label "Back" --menu "Choose a scope to change to" 0 0 0 "${available_scopes[@]}" 2>&1 1>&3)
             exec 3>&-
-            [[ -z "$choose_scope_menu" ]] && continue #Reset loop if user exits
-
-            subnet=${choose_scope_menu%s_*} #Set subnet variable according to selected scope
-            netmask=${choose_scope_menu#*_n} #Set netmask variable according to selected scope
-            continue #Reset loop to avoid running commands after case statement
+            #Reset loop if user exits
+            #Set subnet variable according to selected scope
+            #Set netmask variable according to selected scope
+            #Reset loop to avoid running commands after case statement
+            [[ -z "$choose_scope_menu" ]] && continue
+            subnet=${choose_scope_menu%s_*}
+            netmask=${choose_scope_menu#*_n}
+            continue
         ;;
         "Create new scope")
+            #Tell user to input subnet information
+            #Reset loop if no scope has been added
+            #Set subnet variable according to user input
+            #Set netmask variable according to user input
             exec 3>&1
-            networkResult=$(dialog --cancel-label "Back" --inputbox "Create a scope. Example: 192.168.1.0/24" 0 0 2>&1 1>&3) #Tell user to input subnet information
+            networkResult=$(dialog --cancel-label "Back" --inputbox "Create a scope. Example: 192.168.1.0/24" 0 0 2>&1 1>&3)
             exec 3>&-
-            [[ -z "$networkResult" ]] && continue #Reset loop if no scope has been added
-            subnet=${networkResult%/*} #Set subnet variable according to user input
-            netmask=${networkResult#*/} #Set netmask variable according to user input
+
+            [[ -z "$networkResult" ]] && continue
+            subnet=${networkResult%/*}
+            netmask=${networkResult#*/}
             dialog_edit_menu
         ;;
         "Delete current scope")
-            [[ -z "$(dir $scope_folder)" ]] && dialog --msgbox "There are no dhcp scopes." 0 0 && continue #Reset loop if there are no scopes
+            #Reset loop if there are no scopes
+            [[ -z "$(dir $scope_folder)" ]] && dialog --msgbox "There are no dhcp scopes." 0 0 && continue
 
-            unset scopeFiles #Reset variable
-            for file in $(dir $scope_folder); do
+            #Reset variable
+            #Change dir to scope_folder then loop through files
+            unset scopeFiles
+            pushd "$scope_folder"
+            for file in *; do
                 scopeFiles+=("$file" "." "off")
             done
+            popd
             exec 3>&1
             scopeDelete="$(dialog --checklist "Delete scope(s) - Press space to select." 0 0 0 "${scopeFiles[@]}" 2>&1 1>&3)"
             exec 3>&-
 
-            [[ -z "$scopeDelete" ]] && continue #Reset loop if no scope has been selected
+            #Reset loop if no scope has been selected
+            #Ask user to confirm
+            #Set confirmation variable to exit status
+            [[ -z "$scopeDelete" ]] && continue
             exec 3>&1
-            scopeDeleteYN=$(dialog --yesno "Are you sure you want to delete these scopes?: $scopeDelete" 0 0 2>&1 1>&3) #Ask user to confirm
-            scopeDeleteYN=$? #Set confirmation variable to exit status
+            scopeDeleteYN=$(dialog --yesno "Are you sure you want to delete these scopes?: $scopeDelete" 0 0 2>&1 1>&3)
+            scopeDeleteYN=$?
             exec 3>&-
 
-            ! [[ "$scopeDeleteYN" == "0" ]] && continue #Reset loop if user cancels deletion
-            for file in $scopeDelete; do #Loop through selected scopes
-                rm "$scope_folder/$file" #Delete scope file
-                rm "$exclusionsFolder/$file" #Delete scope exclusions file
+            #Reset loop if user cancels deletion
+            #Loop through selected scopes and delete selected files
+            #Restart service to set changes, then reset loop to avoid running other commands
+            ! [[ "$scopeDeleteYN" == "0" ]] && continue
+            for file in $scopeDelete; do
+                rm "$scope_folder/$file"
+                rm "$exclusionsFolder/$file"
             done
-            serviceRestart #Restart service to set changes
-            continue #Reset loop to avoid running other commands
+            serviceRestart
+            continue
         ;;
         "Set server configurations")
-            dialog_server_configuration_menu #Run server configuration menu
-            continue #Reset loop to avoid running other commands
+            #Run server configuration menu
+            #Reset loop when going back from menu to avoid running commands
+            dialog_server_configuration_menu
+            continue
         ;;
         "Router(s)"|"DNS server(s)"|"Static route(s)"|"NTP server(s)")
             option_mode="multi" #Set option mode to multi
@@ -342,6 +394,7 @@ dialog_scope_menu() {
     done
 }
 
+#Menu for editing server options
 dialog_server_configuration_menu() {
     server_configuration_menu=","
     while ! [[ -z "$server_configuration_menu" ]]; do
@@ -417,7 +470,7 @@ dialog_server_configuration_menu() {
             exec 3>&1
             server_upload_key="$(dialog --editbox "$server_dir/$current_server/.ppk"  0 0 2>&1 1>&3)"
             exec 3>&-
-            ! [[ -z "$server_upload_key" ]] && echo "Inset upload key here"
+            ! [[ -z "$server_upload_key" ]] && echo "Insert upload key here"
         ;;
         esac
     done
