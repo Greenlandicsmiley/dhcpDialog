@@ -91,11 +91,9 @@ scopeGenerate() {
 dialog_main_menu() {
     main_menu="," #Set variable to , to be able to loop following commands until user wants to go back
     while ! [[ -z "$main_menu" ]]; do
-        #Reset variable to avoid adding more to main_menu_list array
         #Add static menu items
         #Set menu item nr to allow for dynamic menu filling
-        unset main_menu_list
-        main_menu_list+=("1" "About" "2" "License" "3" "Add server")
+        main_menu_list=("1" "About" "2" "License" "3" "Add server")
         main_menu_number=4
         #Set server configuration file variable to extract server configuration
         #Get server role from conf file
@@ -112,38 +110,45 @@ dialog_main_menu() {
         done
         popd
         exec 3>&1
-        main_menu=$(dialog --cancel-label "Exit" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)
+        main_menu="$(dialog --cancel-label "Exit" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)"
         exec 3>&-
-        main_menu_result=${main_menu# *} #Extract menu selection from menu result
+        main_menu_result="${main_menu#* }" #Extract menu selection from menu result
         case $main_menu_result in
-        1)
+        "About")
             dialog --textbox $ABOUT 0 0 #Display about information
             continue
         ;;
-        2)
+        "License")
             dialog --textbox $LICENSE 0 0 #Display license information
             continue
         ;;
-        3)
-            unset new_server_name #Infinitely loop until user sets a name for the server
+        "Add server")
+            #Infinitely loop until user sets a name for the server, unset variable if name is already taken
+            unset new_server_name
             until ! [[ -z "$new_server_name" ]]; do
                 exec 3>&1
                 new_server_name="$(dialog --inputbox "Set a name for the server" 0 0 )"
                 exec 3>&-
-                [[ -d "$new_server_name" ]] && unset new_server_name && dialog --msgbox "Server already exists!" 0 0 #Unset variable to loop again until user chooses a server name that has not been chosen yet
+                new_server_name="${new_server_name// /_}"
+                [[ -d "${new_server_name}" ]] && \
+                  unset new_server_name && \
+                  dialog --msgbox "Server already exists!" 0 0
             done
-            server_conf_file="$SERVER_DIR/${new_server_name// /_}/server.conf" #Set server configuration file according to user input
-            mkdir "$SERVER_DIR/${new_server_name// /_}" #Create server directory
-            cp "$server_conf_template" "$server_conf_file" #Copy server configuration template
+            #Set server configuration file according to user input
+            #Create server directory
+            #Copy server configuration template
+            server_conf_file="$SERVER_DIR/${new_server_name}/server.conf"
+            mkdir "$SERVER_DIR/${new_server_name}"
+            cp "$server_conf_template" "$server_conf_file"
         ;;
         esac
         [[ -z "$main_menu" ]] && continue #Reset loop if user input for main menu is empty to avoid running commands below
         current_server="${main_menu#* }" #Extract selected server from user selection
         leases_file="$SERVER_DIR/${current_server}/dhcpd.leases" #Set leases file variable according to user selection
         dhcpd_conf_file="$SERVER_DIR/${current_server}/dhcpd.conf" #Set conf file variable according to user selection
-        scope_folder="$SERVER_DIR/${current_server}/dhcpScopes" #Set scope folder variable according to user selection
+        scope_folder="$SERVER_DIR/${current_server}/dhcp_scopes" #Set scope folder variable according to user selection
         exclusionsFolder="$SERVER_DIR/${current_server}/exclusions" #Set exclusions folder variable according to user selection
-        current_scope="$(grep "Default Scope:" "$SERVER_DIR/$current_server/server.conf")" #Set current scope to user selection
+        current_scope="$(grep "Default Scope:" "${SERVER_DIR}/${current_server}/server.conf")" #Set current scope to user selection
         current_scope="${current_scope#*:}" #Remove everything before and including : to get the correct scope value
         dialog_scope_menu #Switch to scope menu for current scope
     done
@@ -172,27 +177,15 @@ dialog_scope_menu() {
     #Set scope menu variable to be able to loop
     #Convert CIDR notation to netmask
     #Create exclusions file if it does not exist
-    scope_menu=","
     cidr_notation="${netmask}"
     ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$currentScope" && \
         touch "$exclusionsFolder/${subnet}s_n${netmask}"
+    scope_menu=","
     while ! [[ -z "$scope_menu" ]]; do
         #Add static menu items
-        #Get line nr of X: to later get value
-        #Get line nr of Y: to later get value
-        #Set scope menu nr to 4 as default
-        scope_menu_items+=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope" "4" "Set server configurations")
+        scope_menu_items=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope" "4" "Set server configurations")
         x_line="$(grep "X:" "$exclusionsFile")"
         z_line="$(grep "Z:" "$exclusionsFile")"
-        scope_menu_number=4
-        #Check if X or Y line exist. Assuming both exist if one does
-        #Add static menu item with correct values for currently selected subnet
-        #Add static menu item for managing excluded IPs
-        #Add static menu item for viewing dhcp leases
-        #Set scope menu nr to 7 so dynamically added menu items get the correct menu nr
-        #Else
-        #Add set scope range if no scope range has been set
-        #Set scope menu nr to 5 so dynamically added menu items get the correct menu nr
         if ! [[ -z "${x_line:2}" || -z "${z_line:2}" ]]; then
             menuItems+=("5 Change scope range" "${x_line:2}-${z_line:2}")
             menuItems+=("6 Manage excluded IPs" ".")
@@ -202,27 +195,19 @@ dialog_scope_menu() {
             menuItems+=("5 Set scope range" ".")
             scope_menu_number=5
         fi
-        #Set current scope file to the correct file for later file manipulation
-        #Loop through scope options
-        #Get whole string of line of the currently looped option
-        #Extract option name from the string
-        #Set option name to loop variable if option does not exist
-        #Extract value from the string
-        #If value not selected set to not set
-        #Addition to the scope menu nr
-        #Add menu item dynamically according to extracted information from string
+        #Go through available options and add them to menu
         current_scope_file="$server_dir/$current_server/dhcp_scopes/$current_scope"
         for option in "${options_list[@]}"; do
             option_list_string="$(grep "$option" "$current_scope_file")"
             option_list_name="${optionKeytoName[${option_list_string% *}]}"
-            [[ -z "$option_list_name" ]] && option_list_name="$option"
             option_list_value="${option_list_string#* }"
+            [[ -z "$option_list_name" ]] && option_list_name="$option"
             [[ -z "$option_list_value" ]] && option_list_value="Not set"
             scope_menu_number=$(( scope_menu_number + 1 ))
             scope_menu_items+=("${scope_menu_number} ${option_list_name}" "${option_list_value}")
         done
         exec 3>&1
-        scope_menu=$(dialog --cancel-label "Back" --menu "Current scope: ${current_scope}\\nCurrent server: ${current_server}" 0 0 0 "${scope_menu_items[@]}" 2>&1 1>&3)
+        scope_menu="$(dialog --cancel-label "Back" --menu "Current scope: ${current_scope}\\nCurrent server: ${current_server}" 0 0 0 "${scope_menu_items[@]}" 2>&1 1>&3)"
         exec 3>&-
         #Get option name from selected item
         #Convert option name to key
@@ -244,7 +229,7 @@ dialog_scope_menu() {
                 available_scopes+=("$scope" ".")
             done
             exec 3>&1
-            choose_scope_menu=$(dialog --cancel-label "Back" --menu "Choose a scope to change to" 0 0 0 "${available_scopes[@]}" 2>&1 1>&3)
+            choose_scope_menu="$(dialog --cancel-label "Back" --menu "Choose a scope to change to" 0 0 0 "${available_scopes[@]}" 2>&1 1>&3)"
             exec 3>&-
             #Reset loop if user exits
             #Set subnet variable according to selected scope
@@ -261,7 +246,7 @@ dialog_scope_menu() {
             #Set subnet variable according to user input
             #Set netmask variable according to user input
             exec 3>&1
-            networkResult=$(dialog --cancel-label "Back" --inputbox "Create a scope. Example: 192.168.1.0/24" 0 0 2>&1 1>&3)
+            networkResult="$(dialog --cancel-label "Back" --inputbox "Create a scope. Example: 192.168.1.0/24" 0 0 2>&1 1>&3)"
             exec 3>&-
 
             [[ -z "$networkResult" ]] && continue
@@ -275,39 +260,39 @@ dialog_scope_menu() {
 
             #Reset variable
             #Change dir to scope_folder then loop through files
-            unset scopeFiles
+            unset scope_files
             pushd "$scope_folder"
             for file in *; do
-                scopeFiles+=("$file" "." "off")
+                scope_files+=("$file" "." "off")
             done
             popd
             exec 3>&1
-            scopeDelete="$(dialog --checklist "Delete scope(s) - Press space to select." 0 0 0 "${scopeFiles[@]}" 2>&1 1>&3)"
+            scope_delete="$(dialog --checklist "Delete scope(s) - Press space to select." 0 0 0 "${scope_files[@]}" 2>&1 1>&3)"
             exec 3>&-
 
             #Reset loop if no scope has been selected
             #Ask user to confirm
             #Set confirmation variable to exit status
-            [[ -z "$scopeDelete" ]] && continue
+            [[ -z "$scope_delete" ]] && continue
             exec 3>&1
-            scopeDeleteYN=$(dialog --yesno "Are you sure you want to delete these scopes?: $scopeDelete" 0 0 2>&1 1>&3)
-            scopeDeleteYN=$?
+            scope_delete_yes_no=$(dialog --yesno "Are you sure you want to delete these scopes?: $scope_delete" 0 0 2>&1 1>&3)
+            scope_delete_yes_no=$?
             exec 3>&-
 
             #Reset loop if user cancels deletion
             #Loop through selected scopes and delete selected files
             #Restart service to set changes, then reset loop to avoid running other commands
-            ! [[ "$scopeDeleteYN" == "0" ]] && continue
-            for file in $scopeDelete; do
-                rm "$scope_folder/$file"
-                rm "$exclusionsFolder/$file"
-            done
-            serviceRestart
+            if [[ "$scope_delete_yes_no" ]]; then
+                for file in $scopeDelete; do
+                    rm "$scope_folder/$file"
+                    rm "$exclusionsFolder/$file"
+                done
+                serviceRestart
+            fi
             continue
         ;;
         "Set server configurations")
-            #Run server configuration menu
-            #Reset loop when going back from menu to avoid running commands
+            #Run server configuration menu then restart loop
             dialog_server_configuration_menu
             continue
         ;;
@@ -318,74 +303,78 @@ dialog_scope_menu() {
             option_mode="quotes" #Set option mode to quotes
         ;;
         "View dhcp leases")
-            unset lease_ip_infos #Reset associative array
+            #Reset associative array
+            #Loop through variable that has contents of leases
+            #If current lease is not the latest, then do not add to active leases
+            #Remove line nr and whitespace from the beginning. Variable should look like: lease x.x.x.x
+            unset lease_ip_infos
             declare -A lease_ip_infos
-            dhcp_leases=$(grep -n "lease.*{" $leases_file) #Get all lease lines
-            for lease in ${dhcp_leases// /_}; do #Loop through variable that has contents of leases
-                ! [[ "${lease//_/ }" == "$(grep -n "${lease//_/ }" "$leases_file" | tail -n 1)" ]] && continue #If current lease is not the latest, then do not add to active leases
-                lease_ip="${lease% *}" #Remove { and whitespace from the end
-                lease_ip="${lease_ip#*: }" #Remove line nr and whitespace from the beginning. At this point variable should look like: lease x.x.x.x
-                starting_line=${lease#:*} #Get line nr of lease
-                ending_line=$(( starting_line + 1 )) #Set ending line nr of the lease
-                until [[ "$(sed -n "${ending_line}p" "$leases_file")" == "}" ]]; do #Add 1 to ending line variable until the line is the end of the lease
-                    ending_line=$(( ending_line + 1 )) #Add to ending line variable by 1
+            dhcp_leases=$(grep -n "lease.*{" $leases_file)
+            for lease in ${dhcp_leases// /_}; do
+                ! [[ "${lease//_/ }" == "$(grep -n "${lease//_/ }" "$leases_file" | tail -n 1)" ]] && continue
+                lease_ip="${lease% *}"
+                lease_ip="${lease_ip#*: }"
+                starting_line=${lease#:*}
+                ending_line=$(( starting_line + 1 ))
+                until [[ "$(sed -n "${ending_line}p" "$leases_file")" == "}" ]]; do
+                    ending_line=$(( ending_line + 1 ))
                 done
-                for active_lease in $(grep -n "binding state active" "$leases_file"); do #Get all lines that has binding state active and loop through the list
-                    ! [[ ${active_lease%:*} -gt $starting_line && ${active_lease%:*} -lt $ending_line ]] && continue #Reset loop if current line is not between the starting line and the ending line of the current lease being looped through
-                    lease_ip_infos+=(["$lease_ip"]="${starting_line}:${ending_line}") #Add lease information to associative array for easier information extraction
-                    lease_menu_items+=("$lease_ip" ".") #Dynamically add lease ip to menu item list
+                for active_lease in $(grep -n "binding state active" "$leases_file"); do
+                    ! [[ ${active_lease%:*} -gt $starting_line && ${active_lease%:*} -lt $ending_line ]] && continue
+                    lease_ip_infos+=(["$lease_ip"]="${starting_line}:${ending_line}")
+                    lease_menu_items+=("$lease_ip" ".")
                 done
             done
             exec 3>&1
-            lease_menu=$(dialog --menu "View active leases" 0 0 0 "${lease_menu_items[@]}" 2>&1 1>&3)
+            lease_menu="$(dialog --menu "View active leases" 0 0 0 "${lease_menu_items[@]}" 2>&1 1>&3)"
             exec 3>&-
-            lease_line_numbers="${lease_ip_infos[$lease_menu]}" #Extract line information from IP into a variable
-            starting_line="${lease_line_numbers%:*}" #Get starting line of lease
-            ending_line="${lease_line_numbers#*:}" #Get ending line of lease
-            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $leases_file)" 0 0 #Display lease information
+            lease_line_numbers="${lease_ip_infos[$lease_menu]}"
+            starting_line="${lease_line_numbers%:*}"
+            ending_line="${lease_line_numbers#*:}"
+            dialog --msgbox "$(sed -n "${starting_line},${ending_line}p" $leases_file)" 0 0
             continue
         ;;
         "Manage excluded IPs")
             exec 3>&1
             excludeOrView=$(dialog --menu "Manage exclusion list" 0 0 0 "1" "Exclude an IP" "2" "View or edit the list" 2>&1 1>&3)
             exec 3>&-
-            if [[ "$excludeOrView" == "1" ]]; then #Check if user chose excluding an IP
+            if [[ "$excludeOrView" == "1" ]]; then
                 exec 3>&1
-                excluding=$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)
+                excluding="$(dialog --inputbox "Which IP do you want to exclude?" 0 0 2>&1 1>&3)"
                 exec 3>&-
                 grep -q "$excluding" "$exclusionsFile" && \
-                    dialog --msgbox "That IP is already excluded!" 0 0 && continue #Reset loop if IP was already excluded
-                echo "Y:$excluding" >> "$exclusionsFile" #Exclude IP if it is not excluded already
+                    dialog --msgbox "That IP is already excluded!" 0 0 && continue
+                echo "Y:$excluding" >> "$exclusionsFile"
             else
-                ! grep -q "Y:" "$exclusionsFile" && continue #Reset loop if no IP has been excluded yet
-                unset exclusionList
-                for IP in $(grep "Y:" "$exclusionsFile"); do #Loop through all excluded IPs
-                    exclusionList+=("${IP:2}" "." "off") #Add IP to checklist while removing Y:
+                ! grep -q "Y:" "$exclusionsFile" && continue
+                unset exclusion_list
+                for IP in $(grep "Y:" "$exclusionsFile"); do
+                    exclusion_list+=("${IP:2}" "." "off")
                 done
                 exec 3>&1
-                remove_ip_list=$(dialog --checklist "View or remove IPs from exclusion" 0 0 0 "${exclusionList[@]}" 2>&1 1>&3)
+                remove_ip_list="$(dialog --checklist "View or remove IPs from exclusion" 0 0 0 "${exclusion_list[@]}" 2>&1 1>&3)"
                 exec 3>&-
-                [[ -z "$remove_ip_list" ]] && continue #Reset loop if user cancels
+                [[ -z "$remove_ip_list" ]] && continue
                 exec 3>&1
-                delete_ip_confirmation=$(dialog --yesno "Are you sure you want to remove these IPs from exlcusion?: $removeIPList" 0 0 2>&1 1>&3) #Confirm with user if the IPs they chose to delete should be deleted
-                delete_ip_confirmation=$? #Get result of confirmation
+                delete_ip_confirmation="$(dialog --yesno "Are you sure you want to remove these IPs from exlcusion?: $remove_ip_list" 0 0 2>&1 1>&3)"
+                delete_ip_confirmation=$?
                 exec 3>&-
-                ! [[ $remove_ip_confirmation == "0" ]] && continue #Reset loop if user cancels
-                for ip in $remove_ip_list; do #Loop through IPs chosen to be deleted and
-                    sed -i "/${ip}/d" "$exclusionsFile" #Delete excluded IP from exclusion list
+                ! [[ $remove_ip_confirmation == "0" ]] && continue
+                for ip in $remove_ip_list; do
+                    sed -i "/${ip}/d" "$exclusionsFile"
                 done
             fi
             dialog_edit_menu
         ;;
         "Set scope range"|"Change scope range")
-            inputbox_init="$(grep "X:" "$exclusionsFile") $(grep "Z:" "$exclusionsFile")" #Get scope range of current scope for initial input box value
+            inputbox_init="$(grep "X:" "$exclusionsFile") $(grep "Z:" "$exclusionsFile")"
             exec 3>&1
-            scope_range=$(dialog --inputbox "Set the scope range. Example: 192.168.1.1 192.168.1.255. Leave empty to delete." 0 0 "$inputbox_init" 2>&1 1>&3)
+            scope_range="$(dialog --inputbox "Set the scope range. Example: 192.168.1.1 192.168.1.255. Leave empty to delete." 0 0 "$inputbox_init" 2>&1 1>&3)"
             exec 3>&-
             [[ -z "$scope_range" ]] && \
-                sed -i "/X:/,/Z:/d" "$exclusionsFile" && continue #Delete scope range if input box is left empty
+                sed -i "/X:/,/Z:/d" "$exclusionsFile" && continue
             sed -i "/X:/s_.*_X:${scope_range% *}_" "$exclusionsFile"
-            sed -i "/Z:/s_.*_Z:${scope_range#* }_" "$exclusionsFile" #Replace range with new values
+            sed -i "/Z:/s_.*_Z:${scope_range#* }_" "$exclusionsFile"
             dialog_edit_menu
         ;;
         esac
