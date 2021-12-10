@@ -99,14 +99,12 @@ dialog_main_menu() {
         #Get server role from conf file
         #Get server name from conf file
         #Get server address from conf file
-        pushd "$SERVER_DIR"
+        pushd "${SERVER_DIR}"
         for server in *; do
-            server_conf_file="$SERVER_DIR/$server/server.conf"
-            server_role="$(grep "Role:" "$server_conf_file")"
-            server_name="$(grep "Name:" "$server_conf_file")"
-            server_address="$(grep "Address:" "$server_conf_file")"
+            server_conf_file="${SERVER_DIR}/${server}/server.conf"
+            . "${server_conf_file}"
             main_menu_number=$(( main_menu_number + 1 ))
-            main_menu_list+=("${main_menu_number} ${server_name/Name:}" "${server_role/Role:} ${server_address/Address:}")
+            main_menu_list+=("${main_menu_number} ${SERVER_NAME}" "${SERVER_ROLE} ${SERVER_ADDRESS}")
         done
         popd
         exec 3>&1
@@ -145,10 +143,12 @@ dialog_main_menu() {
         current_server="${main_menu#* }"
         leases_file="${SERVER_DIR}/${current_server}/dhcpd.leases"
         dhcpd_conf_file="${SERVER_DIR}/${current_server}/dhcpd.conf"
-        scope_folder="${SERVER_DIR}/${current_server}/dhcp_scopes"
-        exclusions_folder="${SERVER_DIR}/${current_server}/exclusions"
-        current_scope="$(grep "Default Scope:" "${SERVER_DIR}/${current_server}/server.conf")"
-        current_scope="${current_scope#*:}"
+        scope_dir="${SERVER_DIR}/${current_server}/dhcp_scopes"
+        exclusions_dir="${SERVER_DIR}/${current_server}/exclusions"
+        . "${SERVER_DIR}/${current_server}/server.env"
+        subnet="${current_scope%s_*}"
+        netmask="${current_scope#*_n}"
+        exclusions_file="${subnet}s_n${netmask}"
         dialog_scope_menu
     done
 }
@@ -177,14 +177,13 @@ dialog_scope_menu() {
     #Convert CIDR notation to netmask
     #Create exclusions file if it does not exist
     cidr_notation="${netmask}"
-    ! [[ -z "$1" ]] && printf "%s" "subnet $subnet netmask $netmask{\\n}" > "$current_scope" && \
-        touch "$exclusions_folder/${subnet}s_n${netmask}"
+    ! [[ -f "${exclusions_file}" ]] && touch "${exclusions_file}"
     scope_menu=","
     while ! [[ -z "$scope_menu" ]]; do
         #Add static menu items
         scope_menu_items=("1" "Change current scope" "2" "Create new scope" "3" "Delete current scope" "4" "Set server configurations")
-        x_line="$(grep "X:" "$exclusionsFile")"
-        z_line="$(grep "Z:" "$exclusionsFile")"
+        x_line="$(grep "X:" "$exclusions_file")"
+        z_line="$(grep "Z:" "$exclusions_file")"
         if ! [[ -z "${x_line:2}" || -z "${z_line:2}" ]]; then
             menuItems+=("5 Change scope range" "${x_line:2}-${z_line:2}")
             menuItems+=("6 Manage excluded IPs" ".")
@@ -387,8 +386,9 @@ dialog_server_configuration_menu() {
     server_configuration_menu=","
     while ! [[ -z "$server_configuration_menu" ]]; do
         #Add server configuration menu items for server options
+        . $server_conf_file
         server_role="$(grep "Role:" $server_conf_file)"
-        server_conf_menu_items+=("1" "Server role: ${server_role/Role:}")
+        server_conf_menu_items+=("1" "Server role: ${SERVER_ROLE}")
 
         server_name="$(grep "Name:" $server_conf_file)"
         server_conf_menu_items+=("2" "Server name: ${server_name/Name:}")
