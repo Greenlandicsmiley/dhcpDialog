@@ -145,10 +145,11 @@ dialog_main_menu() {
         dhcpd_conf_file="${SERVER_DIR}/${current_server}/dhcpd.conf"
         scope_dir="${SERVER_DIR}/${current_server}/dhcp_scopes"
         exclusions_dir="${SERVER_DIR}/${current_server}/exclusions"
-        . "${SERVER_DIR}/${current_server}/server.env"
-        subnet="${current_scope%s_*}"
-        netmask="${current_scope#*_n}"
-        exclusions_file="${subnet}s_n${netmask}"
+        . "${SERVER_DIR}/${current_server}/server.env" #Check later if variables carry on to other functions
+        current_scope="${SERVER_DEFAULT_SCOPE}"
+        ! [[ -z "${current_scope}" ]] && subnet="${current_scope%s_*}" && \
+          netmask="${current_scope#*_n}"
+        exclusions_file="${exclusions_dir}/${subnet}s_n${netmask}"
         dialog_scope_menu
     done
 }
@@ -176,7 +177,7 @@ dialog_scope_menu() {
     #Set scope menu variable to be able to loop
     #Convert CIDR notation to netmask
     #Create exclusions file if it does not exist
-    cidr_notation="${netmask}"
+    cidr_notation="${netmask}" #Will get around to converting CIDR notation at some point
     ! [[ -f "${exclusions_file}" ]] && touch "${exclusions_file}"
     scope_menu=","
     while ! [[ -z "$scope_menu" ]]; do
@@ -194,12 +195,12 @@ dialog_scope_menu() {
             scope_menu_number=5
         fi
         #Go through available options and add them to menu
-        current_scope_file="$server_dir/$current_server/dhcp_scopes/$current_scope"
+        current_scope_file="${SERVER_DIR}/${current_server}/dhcp_scopes/${current_scope}"
         for option in "${options_list[@]}"; do
             option_list_string="$(grep "$option" "$current_scope_file")"
             option_list_name="${optionKeytoName[${option_list_string% *}]}"
             option_list_value="${option_list_string#* }"
-            [[ -z "$option_list_name" ]] && option_list_name="$option"
+            [[ -z "$option_list_name" ]] && option_list_name="${option}"
             [[ -z "$option_list_value" ]] && option_list_value="Not set"
             scope_menu_number=$(( scope_menu_number + 1 ))
             scope_menu_items+=("${scope_menu_number} ${option_list_name}" "${option_list_value}")
