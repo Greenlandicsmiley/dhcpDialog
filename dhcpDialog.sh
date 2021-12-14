@@ -90,7 +90,7 @@ scopeGenerate() {
 #Menu functions go here - where Dialog commands will be invoked
 dialog_main_menu() {
     main_menu="," #Set variable to , to be able to loop following commands until user wants to go back
-    while ! [[ -z "$main_menu" ]]; do
+    while ! [[ -z "${main_menu}" ]]; do
         #Add static menu items
         #Set menu item nr to allow for dynamic menu filling
         main_menu_list=("1" "About" "2" "License" "3" "Add server")
@@ -111,7 +111,7 @@ dialog_main_menu() {
         main_menu="$(dialog --cancel-label "Exit" --menu "Choose a dhcp server" 0 0 0 "${main_menu_list[@]}" 2>&1 1>&3)"
         exec 3>&-
         main_menu_result="${main_menu#* }" #Extract menu selection from menu result
-        case $main_menu_result in
+        case ${main_menu_result} in
         "1") #About
             dialog --textbox $ABOUT 0 0 #Display information about the project
         ;;
