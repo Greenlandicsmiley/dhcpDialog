@@ -22,6 +22,26 @@ serviceRestart() {
     #service
 }
 
+ip_addition() {
+  IP=(${1//./ })
+  for ((i=${#IP[@]}-1; i>=0; i--)); do
+    IP[$i]=$((IP[$i] + 1))
+    [[ ${IP[$i]} -le 255 ]] && \
+      break
+    IP[$i]=0
+  done
+}
+
+ip_subtraction() {
+  IP=(${1//./ })
+  for ((i=${#IP[@]}-1; i>=0; i--)); do
+    IP[$i]=$((IP[$i] - 1))
+    [[ ${IP[$i]} -lt 0 ]] && \
+      break
+    IP[$i]=255
+  done
+}
+
 ipAddition() {
     range_start_octet_2="${rangeStart#*.}" && range_start_octet_2="${range_start_octet_2%.*.*}" #Remove 1st, 3rd, and 4th octets
     range_start_octet_3="${rangeStart#*.*.}" && range_start_octet_3="${range_start_octet_3%.*}" #Remove 1st, 2nd, and 4th octets
@@ -55,7 +75,7 @@ scopeGenerate() {
 
     sort -t . -k 1,1n -k 2,2n -k 3,3n -k 4,4n -o "$exclusionsFile" "$exclusionsFile" #Sort IP addresses and output to current exclusions file
     sed -i "/X/,/Z/!d" "$exclusionsFile" #Remove all IP addresses outside the scope range
-    while IFS= read -r IP; do; do #Loop through contents of exclusions file
+    while IFS= read -r IP; do #Loop through contents of exclusions file
         case ${IP:2} in
         "X:")
             sed -i "/range/d" "$currentScope" #Delete every line that has range
